@@ -1,0 +1,5 @@
+### Get the / of the server
+GET http://localhost:5000/ HTTP/1.1
+
+### Send a heartbeat to the Main Infrastructure
+GET http://localhost:5000/api/v1/heartbeat/matbeInfra
