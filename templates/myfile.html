@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <title>Cantina - My file</title>
     <script src="{{ url_for('static', filename="delete_file.js") }}"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="https://kit.fontawesome.com/dcdb554a4d.js" crossorigin="anonymous"></script>
 </head>
 <body>
+    <button onclick="console.log('helloworld')">Create file</button>
     {% for item in dir %}
         <li><a href={{ url_for('file', path=path+item) }}>{{ item }}</a></li>
     {% endfor %}
