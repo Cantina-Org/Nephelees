@@ -8,13 +8,13 @@
 </head>
 <body>
     {% for item in dir %}
-        <li><a href={{ url_for('show_file', path=path+item) }}>{{ item }}</a></li>
+        <li><a href={{ url_for('file', path=path+item) }}>{{ item }}</a></li>
     {% endfor %}
     <br>
     {% for item in file %}
         <div style="">
             <li style="display: inline-block;">{{ item }}</li>
-            <button onclick="delete_file()"><i class="fa fa-trash-o" style="font-size:20px"></i></button>
+            <button onclick="delete_file('{{ path }}', '{{ item }}')"><i class="fa fa-trash-o" style="font-size:20px"></i></button>
         </div>
     {% endfor %}
 </body>
