@@ -49,12 +49,17 @@ def file():
         return render_template('myfile.html', dir=work_dir, file=work_file_in_dir, path=path2)
     elif args.get('action') == "delete" and args.get('workFile') and args.get('workFile') in filenames:
         os.remove(dir_path+path2+args.get('workFile'))
-        return render_template("redirect.html", path="/my/file/?path=/")
+        return render_template("redirect/r-myfile.html", path="/my/file/?path=/")
+    elif args.get('action') == "create" and args.get('workFile'):
+        fd = os.open(dir_path+path2+args.get('workFile'), os.O_RDWR | os.O_CREAT)
+        os.close(fd)
+        return render_template("redirect/r-myfile.html", path="/my/file/?path=/")
     else:
         return 'AREUH'
 
-app.add_url_rule('/favicon.ico',
-                 redirect_to=url_for('static', filename='favicon.ico'))
+
 
 if __name__ == '__main__':
+    app.add_url_rule('/favicon.ico',
+                     redirect_to=url_for('static', filename='static/favicon.ico'))
     app.run()
