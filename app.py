@@ -1,13 +1,12 @@
 import os
 from os import *
-from flask import Flask, render_template, request, url_for
+from flask import Flask, render_template, request, url_for, redirect, make_response
 import mariadb
 
 con = mariadb.connect(user="mathieu", password="LeMdPDeTest", host="localhost", port=3306, database="cantina_db")
 cursor = con.cursor()
-# cursor.execute("CREATE TABLE instance(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
-#               "nom_instance TEXT, ip TEXT, official BOOL, private BOOL, usefull_data BOOL, owner_id INT, "
-#               "moderator_id TEXT, user_id TEXT, online BOOL, last_online TEXT, warn_level INT)")
+#cursor.execute("CREATE TABLE user(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
+#           "user_name TEXT, password TEXT, admin BOOL, online BOOL, last_online TEXT)")
 
 con.commit()
 
@@ -24,6 +23,9 @@ def hello_world():  # put application's code here
 @app.route('/my/file/')
 def file():
     global path2, filenames
+    userToken = request.cookies.get('userID')
+    if userToken != "ee":
+        return redirect(url_for('hello_world'))
     args = request.args
     work_file_in_dir, work_dir = [], []
 
@@ -57,7 +59,30 @@ def file():
     else:
         return 'AREUH'
 
+@app.route('/setcookies')
+def setCookies():
+    resp = make_response(redirect(url_for('hello_world')))
+    resp.set_cookie('userID', "ee")
 
+    return resp
+
+
+@app.route('/login', methods=['POST', 'GET'])
+def login():
+    if request.method == 'POST':
+        user = request.form['nm']
+        passwd = request.form['passwd']
+
+        if cursor.execute(f'SELECT user_name, password FROM user WHERE password = {passwd}'):
+            resp = make_response(redirect(url_for('hello_world')))
+            resp.set_cookie('userID', user)
+            return resp
+
+        else:
+
+
+    elif request.method == 'GET':
+        return render_template('login.html')
 
 if __name__ == '__main__':
     app.add_url_rule('/favicon.ico',
