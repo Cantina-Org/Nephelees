@@ -2,11 +2,26 @@ import os
 from os import *
 from flask import Flask, render_template, request, url_for, redirect, make_response
 import mariadb
+import hashlib
+
+
+def hash_perso(passwordtohash):
+    passw = passwordtohash.encode()
+    passw = hashlib.md5(passw).hexdigest()
+    passw = passw.encode()
+    passw = hashlib.sha256(passw).hexdigest()
+    passw = passw.encode()
+    passw = hashlib.sha512(passw).hexdigest()
+    passw = passw.encode()
+    passw = hashlib.md5(passw).hexdigest()
+    return passw
 
 con = mariadb.connect(user="mathieu", password="LeMdPDeTest", host="localhost", port=3306, database="cantina_db")
 cursor = con.cursor()
 #cursor.execute("CREATE TABLE user(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
 #           "user_name TEXT, password TEXT, admin BOOL, online BOOL, last_online TEXT)")
+
+# cursor.execute(f"""INSERT INTO user(token, user_name, password, admin) VALUES ('MC8Qt~KApaCT)VX>FBs*y$~:^=ll$^', 'matbe3', '{hash_perso("Asvel2021_._")}', 0)""")
 
 con.commit()
 
@@ -24,8 +39,11 @@ def hello_world():  # put application's code here
 def file():
     global path2, filenames
     userToken = request.cookies.get('userID')
-    if userToken != "ee":
+    cursor.execute(f'''SELECT token FROM user WHERE admin''',)
+    row = cursor.fetchall()
+    if not [tup for tup in row if userToken in tup]:
         return redirect(url_for('hello_world'))
+
     args = request.args
     work_file_in_dir, work_dir = [], []
 
@@ -69,16 +87,24 @@ def setCookies():
 
 @app.route('/login', methods=['POST', 'GET'])
 def login():
+    
     if request.method == 'POST':
         user = request.form['nm']
         passwd = request.form['passwd']
+        print(passwd)
+        print(hash_perso(passwd))
+        cursor.execute(f'''SELECT user_name, password, token FROM user WHERE password = ? AND user_name = ?''', (hash_perso(passwd), user))
+        row = cursor.fetchone()
 
-        if cursor.execute(f'SELECT user_name, password FROM user WHERE password = {passwd}'):
-            resp = make_response(redirect(url_for('hello_world')))
-            resp.set_cookie('userID', user)
-            return resp
+        try:
+            if len(row) >= 1:
+                print("ooooo")
+                resp = make_response(redirect(url_for('hello_world')))
+                resp.set_cookie('userID', row[2])
 
-        else:
+                return resp
+        except:
+            return redirect(url_for("hello_world"))
 
 
     elif request.method == 'GET':
