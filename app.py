@@ -1,8 +1,9 @@
-import os
+from werkzeug.utils import secure_filename
 from os import *
 from flask import Flask, render_template, request, url_for, redirect, make_response
 import mariadb
 import hashlib
+import os
 
 
 def hash_perso(passwordtohash):
@@ -28,7 +29,7 @@ con.commit()
 path2, filenames = "", ""
 dir_path = "/home/mathieu/Bureau/cantina/file_cloud"
 app = Flask(__name__)
-
+app.config['UPLOAD_PATH'] = dir_path
 
 @app.route('/')
 def hello_world():  # put application's code here
@@ -91,17 +92,13 @@ def login():
     if request.method == 'POST':
         user = request.form['nm']
         passwd = request.form['passwd']
-        print(passwd)
-        print(hash_perso(passwd))
         cursor.execute(f'''SELECT user_name, password, token FROM user WHERE password = ? AND user_name = ?''', (hash_perso(passwd), user))
         row = cursor.fetchone()
 
         try:
             if len(row) >= 1:
-                print("ooooo")
                 resp = make_response(redirect(url_for('hello_world')))
                 resp.set_cookie('userID', row[2])
-
                 return resp
         except:
             return redirect(url_for("hello_world"))
@@ -109,6 +106,25 @@ def login():
 
     elif request.method == 'GET':
         return render_template('login.html')
+
+
+@app.route('/my/file/upload', methods=['GET', 'POST'])
+def upload_file():
+    args = request.args
+    if request.method == 'GET':
+        return render_template('upload_file.html')
+
+    elif request.method == 'POST':
+        userToken = request.cookies.get('userID')
+        cursor.execute(f'''SELECT token FROM user WHERE admin''', )
+        row = cursor.fetchall()
+        if not [tup for tup in row if userToken in tup]:
+            return redirect(url_for('hello_world'))
+
+        f = request.files['file']
+        f.save(os.path.join(dir_path+args.get('path'), secure_filename(f.filename)))
+        return 'file uploaded successfully'
+
 
 if __name__ == '__main__':
     app.add_url_rule('/favicon.ico',
