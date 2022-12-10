@@ -26,7 +26,7 @@ cursor = con.cursor()
 
 con.commit()
 
-path2, filenames = "", ""
+path2, filenames, lastPath = "", "", ""
 dir_path = "/home/mathieu/Bureau/cantina/file_cloud"
 app = Flask(__name__)
 app.config['UPLOAD_PATH'] = dir_path
@@ -39,7 +39,7 @@ def hello_world():  # put application's code here
 
 @app.route('/my/file/')
 def file():
-    global path2, filenames
+    global path2, filenames, lastPath
     userToken = request.cookies.get('userID')
     cursor.execute(f'''SELECT token FROM user WHERE admin''',)
     row = cursor.fetchall()
@@ -47,7 +47,9 @@ def file():
         return redirect(url_for('hello_world'))
 
     args = request.args
+    lastPath = ""
     work_file_in_dir, work_dir = [], []
+
 
     if not args.getlist('path'):
         for (dirpath, dirnames, filenames) in walk(dir_path):
@@ -55,6 +57,15 @@ def file():
             work_dir.extend(dirnames)
             break
     else:
+        last_path_1 = args.get('path')
+        last_path_1 = last_path_1[1:].split("/")
+
+        for i in range(0, len(last_path_1)-1):
+            lastPath = lastPath + last_path_1[i]+'/'
+
+        lastPath = "/"+lastPath
+
+
         for (dirpath, dirnames, filenames) in walk(dir_path + args.get('path')):
             work_file_in_dir.extend(filenames)
             work_dir.extend(dirnames)
@@ -68,14 +79,14 @@ def file():
         path2 = args.get('path')
 
     if not args.get('action') or args.get('action') == 'show':
-        return render_template('myfile.html', dir=work_dir, file=work_file_in_dir, path=path2)
+        return render_template('myfile.html', dir=work_dir, file=work_file_in_dir, path=path2, lastPath=lastPath)
     elif args.get('action') == "delete" and args.get('workFile') and args.get('workFile') in filenames:
         os.remove(dir_path+path2+args.get('workFile'))
-        return render_template("redirect/r-myfile.html", path="/my/file/?path=/")
+        return render_template("redirect/r-myfile.html", path="/my/file/?path=/", lastPath=lastPath)
     elif args.get('action') == "create" and args.get('workFile'):
         fd = os.open(dir_path+path2+args.get('workFile'), os.O_RDWR | os.O_CREAT)
         os.close(fd)
-        return render_template("redirect/r-myfile.html", path="/my/file/?path=/")
+        return render_template("redirect/r-myfile.html", path="/my/file/?path=/", lastPath=lastPath)
     else:
         return 'AREUH'
 
@@ -124,7 +135,7 @@ def upload_file():
 
         f = request.files['file']
         f.save(os.path.join(dir_path+args.get('path'), secure_filename(f.filename)))
-        return 'file uploaded successfully'
+        return redirect(url_for('file', path=args.get('path')))
 
 
 if __name__ == '__main__':
