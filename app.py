@@ -33,7 +33,8 @@ app.config['UPLOAD_PATH'] = dir_path
 
 @app.route('/')
 def hello_world():  # put application's code here
-    return render_template('home.html')
+    cursor.execute('''SELECT user_name FROM user WHERE token = ?''', (request.cookies.get('userID'),))
+    return render_template('home.html', cur=cursor.fetchall())
 
 
 @app.route('/my/file/')
@@ -129,4 +130,4 @@ def upload_file():
 if __name__ == '__main__':
     app.add_url_rule('/favicon.ico',
                      redirect_to=url_for('static', filename='static/favicon.ico'))
-    app.run()
+    app.run(host='0.0.0.0', port=5000)
