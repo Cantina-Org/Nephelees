@@ -58,13 +58,12 @@ def file():
             break
     else:
         last_path_1 = args.get('path')
-        last_path_1 = last_path_1[1:].split("/")
-
+        last_path_1 = last_path_1[:-1].split("/")
+        print(last_path_1)
         for i in range(0, len(last_path_1)-1):
             lastPath = lastPath + last_path_1[i]+'/'
 
-        lastPath = "/"+lastPath
-
+        print(lastPath)
 
         for (dirpath, dirnames, filenames) in walk(dir_path + args.get('path')):
             work_file_in_dir.extend(filenames)
