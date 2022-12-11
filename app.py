@@ -1,6 +1,6 @@
 from werkzeug.utils import secure_filename
 from os import *
-from flask import Flask, render_template, request, url_for, redirect, make_response
+from flask import Flask, render_template, request, url_for, redirect, make_response, send_from_directory
 import mariadb
 import hashlib
 import os
@@ -59,11 +59,8 @@ def file():
     else:
         last_path_1 = args.get('path')
         last_path_1 = last_path_1[:-1].split("/")
-        print(last_path_1)
         for i in range(0, len(last_path_1)-1):
             lastPath = lastPath + last_path_1[i]+'/'
-
-        print(lastPath)
 
         for (dirpath, dirnames, filenames) in walk(dir_path + args.get('path')):
             work_file_in_dir.extend(filenames)
@@ -137,7 +134,19 @@ def upload_file():
         return redirect(url_for('file', path=args.get('path')))
 
 
+@app.route('/my/file/download')
+def download_file():
+    args = request.args
+
+    userToken = request.cookies.get('userID')
+    cursor.execute(f'''SELECT token FROM user WHERE admin''', )
+    row = cursor.fetchall()
+    if not [tup for tup in row if userToken in tup]:
+        return redirect(url_for('hello_world'))
+
+    return send_from_directory(directory=dir_path+args.get('path'), path=args.get('item'))
+
 if __name__ == '__main__':
     app.add_url_rule('/favicon.ico',
                      redirect_to=url_for('static', filename='static/favicon.ico'))
-    app.run(host='0.0.0.0', port=5000)
+    app.run()

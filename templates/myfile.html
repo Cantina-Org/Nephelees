@@ -19,7 +19,8 @@
     {% for item in file %}
         <div style="">
             <li style="display: inline-block;">{{ item }}</li>
-            <button onclick="delete_file('{{ path }}', '{{ item }}')"><i class="fa fa-trash-o" style="font-size:20px"></i></button>
+            <button onclick="delete_file('{{ path }}', '{{ item }}')"><img src="https://img.icons8.com/ios/50/null/trash--v1.png"/></button>
+            <button onclick="window.location.href='{{ url_for('download_file', path=path, item=item) }}'"><img src="https://img.icons8.com/ios/50/null/download-from-cloud--v1.png"/></button>
         </div>
     {% endfor %}
 </body>
