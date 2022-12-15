@@ -5,12 +5,14 @@
     <title>Cantina - My file</title>
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <script src="{{ url_for('static', filename="delete_file.js") }}"></script>
+    <script src="{{ url_for('static', filename="create_folder.js") }}"></script>
     <script src="{{ url_for('static', filename="create_file.js") }}"></script>
     <script src="https://kit.fontawesome.com/dcdb554a4d.js" crossorigin="anonymous"></script>
 </head>
 <body>
     <button type = "button" onclick="window.location.href='{{ url_for('upload_file', path=path) }}'">Upload File</button>
     <button onclick="create_file('{{ path }}')">Create file</button>
+    <button onclick="create_folder('{{ path }}')">Create Folder</button>
     <a href="{{ url_for('file', path=lastPath) }}">..</a>
     {% for item in dir %}
         <li><a href={{ url_for('file', path=path+item) }}>{{ item }}</a></li>

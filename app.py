@@ -19,8 +19,8 @@ def hash_perso(passwordtohash):
 
 con = mariadb.connect(user="mathieu", password="LeMdPDeTest", host="localhost", port=3306, database="cantina_db")
 cursor = con.cursor()
-#cursor.execute("CREATE TABLE user(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
-#           "user_name TEXT, password TEXT, admin BOOL, online BOOL, last_online TEXT)")
+cursor.execute("CREATE TABLE IF NOT EXISTS user(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
+           "user_name TEXT, password TEXT, admin BOOL, online BOOL, last_online TEXT)")
 
 # cursor.execute(f"""INSERT INTO user(token, user_name, password, admin) VALUES ('MC8Qt~KApaCT)VX>FBs*y$~:^=ll$^', 'matbe3', '{hash_perso("Asvel2021_._")}', 0)""")
 
@@ -79,9 +79,12 @@ def file():
     elif args.get('action') == "delete" and args.get('workFile') and args.get('workFile') in filenames:
         os.remove(dir_path+path2+args.get('workFile'))
         return render_template("redirect/r-myfile.html", path="/my/file/?path=/", lastPath=lastPath)
-    elif args.get('action') == "create" and args.get('workFile'):
+    elif args.get('action') == "createFile" and args.get('workFile'):
         fd = os.open(dir_path+path2+args.get('workFile'), os.O_RDWR | os.O_CREAT)
         os.close(fd)
+        return render_template("redirect/r-myfile.html", path="/my/file/?path=/", lastPath=lastPath)
+    elif args.get('action') == "createFolder" and args.get('workFile'):
+        os.mkdir(dir_path+path2+args.get('workFile'))
         return render_template("redirect/r-myfile.html", path="/my/file/?path=/", lastPath=lastPath)
     else:
         return 'AREUH'
