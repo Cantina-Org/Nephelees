@@ -4,6 +4,7 @@ from flask import Flask, render_template, request, url_for, redirect, make_respo
 import mariadb
 import hashlib
 import os
+import uuid
 
 
 def hash_perso(passwordtohash):
@@ -22,7 +23,7 @@ cursor = con.cursor()
 cursor.execute("CREATE TABLE IF NOT EXISTS user(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
            "user_name TEXT, password TEXT, admin BOOL, online BOOL, last_online TEXT)")
 
-# cursor.execute(f"""INSERT INTO user(token, user_name, password, admin) VALUES ('MC8Qt~KApaCT)VX>FBs*y$~:^=ll$^', 'matbe3', '{hash_perso("Asvel2021_._")}', 0)""")
+# cursor.execute(f"""INSERT INTO user(token, user_name, password, admin) VALUES ({uuid.uuid3(uuid.uuid1(), str(uuid.uuid1()))}, 'matbe3', '{hash_perso("")}', 0)""")
 
 con.commit()
 
@@ -43,6 +44,7 @@ def file():
     userToken = request.cookies.get('userID')
     cursor.execute(f'''SELECT token FROM user WHERE admin''',)
     row = cursor.fetchall()
+
     if not [tup for tup in row if userToken in tup]:
         return redirect(url_for('hello_world'))
 
@@ -56,6 +58,7 @@ def file():
             work_file_in_dir.extend(filenames)
             work_dir.extend(dirnames)
             break
+
     else:
         last_path_1 = args.get('path')
         last_path_1 = last_path_1[:-1].split("/")
@@ -69,32 +72,36 @@ def file():
 
     if not args.get('path'):
         path2 = "/"
+
     elif args.get('path') != "/":
         path2 = args.get('path') + "/"
+
     elif args.get('path') == "/":
         path2 = args.get('path')
 
+
     if not args.get('action') or args.get('action') == 'show':
         return render_template('myfile.html', dir=work_dir, file=work_file_in_dir, path=path2, lastPath=lastPath)
-    elif args.get('action') == "delete" and args.get('workFile') and args.get('workFile') in filenames:
+
+    elif args.get('action') == "deleteFile" and args.get('workFile') and args.get('workFile') in filenames:
         os.remove(dir_path+path2+args.get('workFile'))
         return render_template("redirect/r-myfile.html", path="/my/file/?path=/", lastPath=lastPath)
+
     elif args.get('action') == "createFile" and args.get('workFile'):
         fd = os.open(dir_path+path2+args.get('workFile'), os.O_RDWR | os.O_CREAT)
         os.close(fd)
         return render_template("redirect/r-myfile.html", path="/my/file/?path=/", lastPath=lastPath)
+
+    elif args.get('action') == "deleteFolder" and args.get('workFile') and args.get('workFile') in filenames:
+        os.rmdir(dir_path+path2+args.get('workFile'))
+        return render_template("redirect/r-myfile.html", path="/my/file/?path=/", lastPath=lastPath)
+
     elif args.get('action') == "createFolder" and args.get('workFile'):
         os.mkdir(dir_path+path2+args.get('workFile'))
         return render_template("redirect/r-myfile.html", path="/my/file/?path=/", lastPath=lastPath)
+
     else:
-        return 'AREUH'
-
-@app.route('/setcookies')
-def setCookies():
-    resp = make_response(redirect(url_for('hello_world')))
-    resp.set_cookie('userID', "ee")
-
-    return resp
+        return render_template('myfile.html', dir=work_dir, file=work_file_in_dir, path=path2, lastPath=lastPath)
 
 
 @app.route('/login', methods=['POST', 'GET'])
@@ -122,6 +129,7 @@ def login():
 @app.route('/my/file/upload', methods=['GET', 'POST'])
 def upload_file():
     args = request.args
+
     if request.method == 'GET':
         return render_template('upload_file.html')
 
@@ -129,6 +137,7 @@ def upload_file():
         userToken = request.cookies.get('userID')
         cursor.execute(f'''SELECT token FROM user WHERE admin''', )
         row = cursor.fetchall()
+
         if not [tup for tup in row if userToken in tup]:
             return redirect(url_for('hello_world'))
 
@@ -144,10 +153,12 @@ def download_file():
     userToken = request.cookies.get('userID')
     cursor.execute(f'''SELECT token FROM user WHERE admin''', )
     row = cursor.fetchall()
+
     if not [tup for tup in row if userToken in tup]:
         return redirect(url_for('hello_world'))
 
     return send_from_directory(directory=dir_path+args.get('path'), path=args.get('item'))
+
 
 if __name__ == '__main__':
     app.add_url_rule('/favicon.ico',

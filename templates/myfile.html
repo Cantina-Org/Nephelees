@@ -5,6 +5,7 @@
     <title>Cantina - My file</title>
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <script src="{{ url_for('static', filename="delete_file.js") }}"></script>
+    <script src="{{ url_for('static', filename="delete_folder.js") }}"></script>
     <script src="{{ url_for('static', filename="create_folder.js") }}"></script>
     <script src="{{ url_for('static', filename="create_file.js") }}"></script>
     <script src="https://kit.fontawesome.com/dcdb554a4d.js" crossorigin="anonymous"></script>
@@ -16,10 +17,12 @@
     <a href="{{ url_for('file', path=lastPath) }}">..</a>
     {% for item in dir %}
         <li><a href={{ url_for('file', path=path+item) }}>{{ item }}</a></li>
+        <button onclick="delete_folder('{{ path }}', '{{ item }}')"><img src="https://img.icons8.com/ios/50/null/trash--v1.png"/></button>
+
     {% endfor %}
     <br>
     {% for item in file %}
-        <div style="">
+        <div>
             <li style="display: inline-block;">{{ item }}</li>
             <button onclick="delete_file('{{ path }}', '{{ item }}')"><img src="https://img.icons8.com/ios/50/null/trash--v1.png"/></button>
             <button onclick="window.location.href='{{ url_for('download_file', path=path, item=item) }}'"><img src="https://img.icons8.com/ios/50/null/download-from-cloud--v1.png"/></button>
