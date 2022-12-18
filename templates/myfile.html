@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <title>Cantina - My file</title>
@@ -17,15 +17,14 @@
     <a href="{{ url_for('file', path=lastPath) }}">..</a>
     {% for item in dir %}
         <li><a href={{ url_for('file', path=path+item) }}>{{ item }}</a></li>
-        <button onclick="delete_folder('{{ path }}', '{{ item }}')"><img src="https://img.icons8.com/ios/50/null/trash--v1.png"/></button>
-
+        <button onclick="delete_folder('{{ path }}', '{{ item }}')"><img src="https://img.icons8.com/ios/50/null/trash--v1.png" alt="Une poubelle pour supprimer ce dossier"/></button>
     {% endfor %}
     <br>
     {% for item in file %}
         <div>
             <li style="display: inline-block;">{{ item }}</li>
-            <button onclick="delete_file('{{ path }}', '{{ item }}')"><img src="https://img.icons8.com/ios/50/null/trash--v1.png"/></button>
-            <button onclick="window.location.href='{{ url_for('download_file', path=path, item=item) }}'"><img src="https://img.icons8.com/ios/50/null/download-from-cloud--v1.png"/></button>
+            <button onclick="delete_file('{{ path }}', '{{ item }}')"><img src="https://img.icons8.com/ios/50/null/trash--v1.png" alt="Une poubelle pour supprimer ce fichier"/></button>
+            <button onclick="window.location.href='{{ url_for('download_file', path=path, item=item) }}'"><img src="https://img.icons8.com/ios/50/null/download-from-cloud--v1.png" alt="Un nuage avec une flèche qui descends pour télécharger le fichier"/></button>
         </div>
     {% endfor %}
 </body>
