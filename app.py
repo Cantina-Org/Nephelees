@@ -161,6 +161,16 @@ def download_file():
     return send_from_directory(directory=dir_path + args.get('path'), path=args.get('item'))
 
 
+@app.route('/admin/home')
+def admin_home():
+    cursor.execute('''SELECT user_name, admin FROM user WHERE token = ?''', (request.cookies.get('userID'),))
+    data = cursor.fetchall()
+    if data[0][1]:
+        return data[0][0]
+    else:
+        return redirect(url_for('hello_world'))
+
+
 if __name__ == '__main__':
     app.add_url_rule('/favicon.ico',
                      redirect_to=url_for('static', filename='static/favicon.ico'))

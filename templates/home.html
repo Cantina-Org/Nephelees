@@ -10,7 +10,7 @@
     {% if request.cookies.get('userID') %}
         Hello {{ cur[0][0] }}<br>
         {% if cur[0][1] %}
-            <a href="{{ url_for('file', path="/") }}">Panel Administrateur</a>
+            <a href="{{ url_for('admin_home') }}">Panel Administrateur</a>
         {% endif %}
     {% else %}
         Hello unknow<br>
