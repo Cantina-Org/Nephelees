@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <title>Cantina - Admin User Manager</title>
+</head>
+<body>
+    <h1>Hello {{ user_name[0][0] }}!</h1>
+    <button onclick="window.location.href='{{ url_for('admin_add_user') }}'"><img src="https://img.icons8.com/ios/50/null/add-user-male.png" alt="Une Personne avec un plus pour ajouter un utilisateur"/></button>
+    <hr style="height:25px; visibility:hidden;" />
+    {% for i in all_account%}
+        <li style="{% if i[0] % 2 == 0 %}background-color: lightblue; color: black;{% else %}background-color: black; color: lightblue;{% endif %}">{{ i[2] }}</li>
+    {% endfor %}
+</body>
+</html>

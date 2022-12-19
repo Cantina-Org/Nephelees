@@ -1,14 +1,14 @@
 <!DOCTYPE html>
+<!--suppress ALL -->
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Cantina - My file</title>
+    <title>Cantina Cloud - My file</title>
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <script src="{{ url_for('static', filename="delete_file.js") }}"></script>
     <script src="{{ url_for('static', filename="delete_folder.js") }}"></script>
     <script src="{{ url_for('static', filename="create_folder.js") }}"></script>
     <script src="{{ url_for('static', filename="create_file.js") }}"></script>
-    <script src="https://kit.fontawesome.com/dcdb554a4d.js" crossorigin="anonymous"></script>
 </head>
 <body>
     <button type = "button" onclick="window.location.href='{{ url_for('upload_file', path=path) }}'">Upload File</button>

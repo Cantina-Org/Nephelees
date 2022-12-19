@@ -4,6 +4,9 @@ from flask import Flask, render_template, request, url_for, redirect, make_respo
 import mariadb
 import hashlib
 import os
+import subprocess
+
+
 # import uuid
 
 
@@ -19,6 +22,18 @@ def hash_perso(passwordtohash):
     return passw
 
 
+def user_login():
+    cursor.execute('''SELECT user_name, admin FROM user WHERE token = ?''', (request.cookies.get('userID'),))
+    data = cursor.fetchall()
+
+    if data[0][0] != '' and data[0][1]:
+        return True, True
+    elif data[0][0] != '' and not data[0][1]:
+        return True, False
+    else:
+        return False, False
+
+
 con = mariadb.connect(user="cantina", password="LeMdPDeTest", host="localhost", port=3306, database="cantina_db")
 cursor = con.cursor()
 cursor.execute("CREATE TABLE IF NOT EXISTS user(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
@@ -30,7 +45,7 @@ cursor.execute("CREATE TABLE IF NOT EXISTS user(ID INT PRIMARY KEY NOT NULL AUTO
 con.commit()
 
 path2, filenames, lastPath = "", "", ""
-dir_path = os.path.abspath(os.getcwd())+'/file_cloud'
+dir_path = os.path.abspath(os.getcwd()) + '/file_cloud'
 app = Flask(__name__)
 app.config['UPLOAD_PATH'] = dir_path
 
@@ -44,11 +59,11 @@ def hello_world():  # put application's code here
 @app.route('/my/file/')
 def file():
     global path2, filenames, lastPath
-    userToken = request.cookies.get('userID')
+    user_token = request.cookies.get('userID')
     cursor.execute(f'''SELECT token FROM user WHERE admin''')
     row = cursor.fetchall()
 
-    if not [tup for tup in row if userToken in tup]:
+    if not [tup for tup in row if user_token in tup]:
         return redirect(url_for('hello_world'))
 
     args = request.args
@@ -135,11 +150,11 @@ def upload_file():
         return render_template('upload_file.html')
 
     elif request.method == 'POST':
-        userToken = request.cookies.get('userID')
+        user_token = request.cookies.get('userID')
         cursor.execute(f'''SELECT token FROM user WHERE admin''', )
         row = cursor.fetchall()
 
-        if not [tup for tup in row if userToken in tup]:
+        if not [tup for tup in row if user_token in tup]:
             return redirect(url_for('hello_world'))
 
         f = request.files['file']
@@ -151,11 +166,11 @@ def upload_file():
 def download_file():
     args = request.args
 
-    userToken = request.cookies.get('userID')
-    cursor.execute(f'''SELECT token FROM user WHERE admin''', )
+    user_token = request.cookies.get('userID')
+    cursor.execute(f'''SELECT token FROM user WHERE admin''')
     row = cursor.fetchall()
 
-    if not [tup for tup in row if userToken in tup]:
+    if not [tup for tup in row if user_token in tup]:
         return redirect(url_for('hello_world'))
 
     return send_from_directory(directory=dir_path + args.get('path'), path=args.get('item'))
@@ -163,10 +178,43 @@ def download_file():
 
 @app.route('/admin/home')
 def admin_home():
-    cursor.execute('''SELECT user_name, admin FROM user WHERE token = ?''', (request.cookies.get('userID'),))
-    data = cursor.fetchall()
-    if data[0][1]:
-        return data[0][0]
+    count = 0
+    admin_and_login = user_login()
+    if admin_and_login[0] and admin_and_login[1]:
+        for root_dir, cur_dir, files in os.walk(dir_path):
+            count += len(files)
+        main_folder_size = subprocess.check_output(['du', '-sh', dir_path]).split()[0].decode('utf-8')
+        cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
+        user_name = cursor.fetchall()
+        return render_template('admin/home.html', data=user_name, file_number=count, main_folder_size=main_folder_size)
+
+    else:
+        return redirect(url_for('hello_world'))
+
+
+@app.route('/admin/usermanager')
+def admin_user_manager():
+    admin_and_login = user_login()
+    if admin_and_login[0] and admin_and_login[1]:
+        cursor.execute('''SELECT * FROM user''')
+        all_account = cursor.fetchall()
+        cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
+        user_name = cursor.fetchall()
+        return render_template('admin/user_manager.html', user_name=user_name,
+                               all_account=all_account)
+
+    else:
+        return redirect(url_for('hello_world'))
+
+
+@app.route('/admin/usermanager/add', methods=['POST', 'GET'])
+def admin_add_user():
+    admin_and_login = user_login()
+    if admin_and_login[0] and admin_and_login[1]:
+        cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
+        user_name = cursor.fetchall()
+        return render_template('admin/user_manager.html', user_name=user_name)
+
     else:
         return redirect(url_for('hello_world'))
 
