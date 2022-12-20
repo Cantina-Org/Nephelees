@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <title>Cantina - Admin User Manager</title>
+</head>
+<body>
+    ID: {{ user_account[0] }}<br>
+    Token: {{ user_account[1] }}<br>
+    Name: {{ user_account[2] }}<br>
+    Is Admin : {% if user_account[4] %}True{% else %}False{% endif %}<br>
+</body>
+</html>

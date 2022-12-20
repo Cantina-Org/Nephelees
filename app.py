@@ -190,16 +190,22 @@ def admin_home():
         return redirect(url_for('hello_world'))
 
 
-@app.route('/admin/usermanager')
-def admin_user_manager():
+@app.route('/admin/usermanager/')
+@app.route('/admin/usermanager/<name>')
+def admin_user_manager(name=None):
     admin_and_login = user_login()
     if admin_and_login[0] and admin_and_login[1]:
-        cursor.execute('''SELECT * FROM user''')
-        all_account = cursor.fetchall()
-        cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
-        user_name = cursor.fetchall()
-        return render_template('admin/user_manager.html', user_name=user_name,
-                               all_account=all_account)
+        if name:
+            cursor.execute('''SELECT * FROM user WHERE user_name=?''', (name,))
+            user_account = cursor.fetchall()
+            return render_template('admin/specific_user_manager.html', user_account=user_account[0])
+        else:
+            cursor.execute('''SELECT * FROM user''')
+            all_account = cursor.fetchall()
+            cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
+            user_name = cursor.fetchall()
+            return render_template('admin/user_manager.html', user_name=user_name,
+                                   all_account=all_account)
 
     else:
         return redirect(url_for('hello_world'))
@@ -220,10 +226,13 @@ def admin_add_user():
                         admin = True
                     else:
                         admin = False
-                except:
+                except Exception as e:
+                    print(e)
                     admin = False
 
-                cursor.execute('''INSERT INTO user(token, user_name, password, admin) VALUES (?, ?, ?, ?)''', (str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1()))), request.form['uname'], hash_perso(request.form['pword2']), admin))
+                cursor.execute('''INSERT INTO user(token, user_name, password, admin) VALUES (?, ?, ?, ?)''', (
+                    str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1()))), request.form['uname'],
+                    hash_perso(request.form['pword2']), admin))
                 con.commit()
                 return redirect(url_for('admin_user_manager'))
 
