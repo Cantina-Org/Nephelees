@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <title>Cantina - Admin User Manager</title>
+</head>
+<body>
+    <form action="{{ url_for('admin_add_user') }}" method="post">
+        <label>User Name: </label>
+        <input type="text" placeholder="Enter Username" name="uname" required><br>
+        <label>User email: </label>
+        <input type="email" placeholder="Enter an email" name="email" required><br>
+        <label>User Password: </label>
+        <input type="password" placeholder="Enter a password" name="pword1" required><br>
+        <label>User Password confirmation: </label>
+        <input type="password" placeholder="Enter a password" name="pword2" required><br>
+        <label>User Permission</label>
+        <input type="checkbox" name="admin"><br>
+        <button type="submit">Submit User</button>
+    </form>
+</body>
+</html>

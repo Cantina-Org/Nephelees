@@ -5,9 +5,7 @@ import mariadb
 import hashlib
 import os
 import subprocess
-
-
-# import uuid
+import uuid
 
 
 def hash_perso(passwordtohash):
@@ -207,13 +205,27 @@ def admin_user_manager():
         return redirect(url_for('hello_world'))
 
 
-@app.route('/admin/usermanager/add', methods=['POST', 'GET'])
+@app.route('/admin/add_user/', methods=['POST', 'GET'])
 def admin_add_user():
     admin_and_login = user_login()
     if admin_and_login[0] and admin_and_login[1]:
-        cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
-        user_name = cursor.fetchall()
-        return render_template('admin/user_manager.html', user_name=user_name)
+        if request.method == 'GET':
+            cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
+            user_name = cursor.fetchall()
+            return render_template('admin/add_user.html', user_name=user_name)
+        elif request.method == 'POST':
+            if request.form['pword1'] == request.form['pword2']:
+                try:
+                    if request.form['admin'] == 'on':
+                        admin = True
+                    else:
+                        admin = False
+                except:
+                    admin = False
+
+                cursor.execute('''INSERT INTO user(token, user_name, password, admin) VALUES (?, ?, ?, ?)''', (str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1()))), request.form['uname'], hash_perso(request.form['pword2']), admin))
+                con.commit()
+                return redirect(url_for('admin_user_manager'))
 
     else:
         return redirect(url_for('hello_world'))
