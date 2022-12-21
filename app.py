@@ -36,6 +36,8 @@ con = mariadb.connect(user="cantina", password="LeMdPDeTest", host="localhost", 
 cursor = con.cursor()
 cursor.execute("CREATE TABLE IF NOT EXISTS user(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
                "user_name TEXT, password TEXT, admin BOOL, online BOOL, last_online TEXT)")
+cursor.execute("CREATE TABLE IF NOT EXISTS log(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, name TEXT, user_ip text,"
+               "user_token TEXT, argument TEXT, log_level INT)")
 
 # cursor.execute(f"""INSERT INTO user(token, user_name, password, admin) VALUES ('{uuid.uuid3(uuid.uuid1(),
 # str(uuid.uuid1()))}', 'matbe2', '{hash_perso("Asvel2021_._")}', 0)""")
@@ -129,6 +131,8 @@ def login():
 
         try:
             if len(row) >= 1:
+                cursor.execute('''INSERT INTO log(name, user_ip, user_token, log_level) VALUES (?,?,?,?)''', ('login', str(request.remote_addr), str(row[2]), 1))
+                con.commit()
                 resp = make_response(redirect(url_for('hello_world')))
                 resp.set_cookie('userID', row[2])
                 return resp
@@ -240,7 +244,24 @@ def admin_add_user():
         return redirect(url_for('hello_world'))
 
 
+@app.route('/admin/show_log/')
+@app.route('/admin/show_log/<id>')
+def admin_show_log(id=None):
+    admin_and_login = user_login()
+    if admin_and_login[0] and admin_and_login[1]:
+        if id:
+            cursor.execute('''SELECT * FROM log WHERE ID=?''', (id,))
+            log = cursor.fetchone()
+            return render_template('admin/specific_log.html', log=log)
+        else:
+            cursor.execute('''SELECT * FROM log''')
+            all_log = cursor.fetchall()
+            cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
+            user_name = cursor.fetchall()
+            return render_template('admin/show_log.html', user_name=user_name,
+                                   all_log=all_log)
+
+
 if __name__ == '__main__':
-    app.add_url_rule('/favicon.ico',
-                     redirect_to=url_for('static', filename='static/favicon.ico'))
+    app.add_url_rule('/favicon.ico', redirect_to=url_for('static', filename='static/favicon.ico'))
     app.run()

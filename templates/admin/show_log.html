@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <title>Cantina - Admin Show Log</title>
+</head>
+<body>
+    <h1>Hello!</h1>
+    <hr style="height:25px; visibility:hidden;" />
+    {% for i in all_log %}
+        <li style="{% if i[0] % 2 == 0 %}background-color: lightblue;{% else %}background-color: black;{% endif %}"><a href="{{ url_for('admin_show_log')+i[0]|string }}" style="text-decoration: None; {% if i[0] % 2 == 0 %}color: black;{% else %}color: lightblue;{% endif %}">{{ i[1] }}</a></li>
+    {% endfor %}
+</body>
+</html>
