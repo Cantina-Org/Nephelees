@@ -57,7 +57,7 @@ app.config['UPLOAD_PATH'] = dir_path
 
 
 @app.route('/')
-def hello_world():  # put application's code here
+def home():  # put application's code here
     cursor.execute('''SELECT user_name, admin FROM user WHERE token = ?''', (request.cookies.get('userID'),))
     return render_template('home.html', cur=cursor.fetchall())
 
@@ -70,7 +70,7 @@ def file():
     row = cursor.fetchall()
 
     if not [tup for tup in row if user_token in tup]:
-        return redirect(url_for('hello_world'))
+        return redirect(url_for('home'))
 
     args = request.args
     lastPath = ""
@@ -138,12 +138,12 @@ def login():
         try:
             if len(row) >= 1:
                 make_log('login', request.remote_addr, row[2], 1)
-                resp = make_response(redirect(url_for('hello_world')))
+                resp = make_response(redirect(url_for('home')))
                 resp.set_cookie('userID', row[2])
                 return resp
         except Exception as e:
             print(e)
-            return redirect(url_for("hello_world"))
+            return redirect(url_for("home"))
 
     elif request.method == 'GET':
         return render_template('login.html')
@@ -162,7 +162,7 @@ def upload_file():
         row = cursor.fetchall()
 
         if not [tup for tup in row if user_token in tup]:
-            return redirect(url_for('hello_world'))
+            return redirect(url_for('home'))
 
         f = request.files['file']
         f.save(os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
@@ -180,95 +180,114 @@ def download_file():
     row = cursor.fetchall()
 
     if not [tup for tup in row if user_token in tup]:
-        return redirect(url_for('hello_world'))
+        return redirect(url_for('home'))
 
+    make_log('Download file', request.remote_addr, request.cookies.get('userID'), 1,
+             dir_path+args.get('path')+args.get('item'))
     return send_from_directory(directory=dir_path + args.get('path'), path=args.get('item'))
 
 
 @app.route('/admin/home')
 def admin_home():
-    count = 0
-    admin_and_login = user_login()
-    if admin_and_login[0] and admin_and_login[1]:
-        for root_dir, cur_dir, files in os.walk(dir_path):
-            count += len(files)
-        main_folder_size = subprocess.check_output(['du', '-sh', dir_path]).split()[0].decode('utf-8')
-        cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
-        user_name = cursor.fetchall()
-        return render_template('admin/home.html', data=user_name, file_number=count, main_folder_size=main_folder_size)
+    try:
+        count = 0
+        admin_and_login = user_login()
+        if admin_and_login[0] and admin_and_login[1]:
+            for root_dir, cur_dir, files in os.walk(dir_path):
+                count += len(files)
+            main_folder_size = subprocess.check_output(['du', '-sh', dir_path]).split()[0].decode('utf-8')
+            cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
+            user_name = cursor.fetchall()
+            return render_template('admin/home.html', data=user_name, file_number=count, main_folder_size=main_folder_size)
 
-    else:
-        return redirect(url_for('hello_world'))
+        else:
+            return redirect(url_for('home'))
+
+    except Exception as e:
+        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
+        return redirect(url_for('home'))
 
 
 @app.route('/admin/usermanager/')
 @app.route('/admin/usermanager/<name>')
 def admin_user_manager(user_name=None):
-    admin_and_login = user_login()
-    if admin_and_login[0] and admin_and_login[1]:
-        if user_name:
-            cursor.execute('''SELECT * FROM user WHERE user_name=?''', (user_name,))
-            user_account = cursor.fetchall()
-            return render_template('admin/specific_user_manager.html', user_account=user_account[0])
-        else:
-            cursor.execute('''SELECT * FROM user''')
-            all_account = cursor.fetchall()
-            cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
-            user_name = cursor.fetchall()
-            return render_template('admin/user_manager.html', user_name=user_name,
-                                   all_account=all_account)
+    try:
+        admin_and_login = user_login()
+        if admin_and_login[0] and admin_and_login[1]:
+            if user_name:
+                cursor.execute('''SELECT * FROM user WHERE user_name=?''', (user_name,))
+                user_account = cursor.fetchall()
+                return render_template('admin/specific_user_manager.html', user_account=user_account[0])
+            else:
+                cursor.execute('''SELECT * FROM user''')
+                all_account = cursor.fetchall()
+                cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
+                user_name = cursor.fetchall()
+                return render_template('admin/user_manager.html', user_name=user_name,
+                                       all_account=all_account)
 
-    else:
-        return redirect(url_for('hello_world'))
+        else:
+            return redirect(url_for('home'))
+    except Exception as e:
+        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
+        return redirect(url_for('home'))
 
 
 @app.route('/admin/add_user/', methods=['POST', 'GET'])
 def admin_add_user():
-    admin_and_login = user_login()
-    if admin_and_login[0] and admin_and_login[1]:
-        if request.method == 'GET':
-            cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
-            user_name = cursor.fetchall()
-            return render_template('admin/add_user.html', user_name=user_name)
-        elif request.method == 'POST':
-            if request.form['pword1'] == request.form['pword2']:
-                try:
-                    if request.form['admin'] == 'on':
-                        admin = True
-                    else:
+    try:
+        admin_and_login = user_login()
+        if admin_and_login[0] and admin_and_login[1]:
+            if request.method == 'GET':
+                cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
+                user_name = cursor.fetchall()
+                return render_template('admin/add_user.html', user_name=user_name)
+            elif request.method == 'POST':
+                if request.form['pword1'] == request.form['pword2']:
+                    try:
+                        if request.form['admin'] == 'on':
+                            admin = True
+                        else:
+                            admin = False
+                    except Exception as e:
+                        print(e)
                         admin = False
-                except Exception as e:
-                    print(e)
-                    admin = False
-                newUUID = str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())))
-                cursor.execute('''INSERT INTO user(token, user_name, password, admin) VALUES (?, ?, ?, ?)''', (
-                    newUUID, request.form['uname'],
-                    hash_perso(request.form['pword2']), admin))
-                con.commit()
-                make_log('add_user', request.remote_addr, request.cookies.get('userID'), 2,
-                         'Created user token: '+newUUID)
-                return redirect(url_for('admin_user_manager'))
+                    newUUID = str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())))
+                    cursor.execute('''INSERT INTO user(token, user_name, password, admin) VALUES (?, ?, ?, ?)''', (
+                        newUUID, request.form['uname'],
+                        hash_perso(request.form['pword2']), admin))
+                    con.commit()
+                    make_log('add_user', request.remote_addr, request.cookies.get('userID'), 2,
+                             'Created user token: ' + newUUID)
+                    return redirect(url_for('admin_user_manager'))
 
-    else:
-        return redirect(url_for('hello_world'))
+        else:
+            return redirect(url_for('home'))
+    except Exception as e:
+        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
+        return redirect(url_for('home'))
 
 
 @app.route('/admin/show_log/')
 @app.route('/admin/show_log/<log_id>')
 def admin_show_log(log_id=None):
-    admin_and_login = user_login()
-    if admin_and_login[0] and admin_and_login[1]:
-        if log_id:
-            cursor.execute('''SELECT * FROM log WHERE ID=?''', (log_id,))
-            log = cursor.fetchone()
-            return render_template('admin/specific_log.html', log=log)
-        else:
-            cursor.execute('''SELECT * FROM log''')
-            all_log = cursor.fetchall()
-            cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
-            user_name = cursor.fetchall()
-            return render_template('admin/show_log.html', user_name=user_name,
-                                   all_log=all_log)
+    try:
+        admin_and_login = user_login()
+        if admin_and_login[0] and admin_and_login[1]:
+            if log_id:
+                cursor.execute('''SELECT * FROM log WHERE ID=?''', (log_id,))
+                log = cursor.fetchone()
+                return render_template('admin/specific_log.html', log=log)
+            else:
+                cursor.execute('''SELECT * FROM log''')
+                all_log = cursor.fetchall()
+                cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
+                user_name = cursor.fetchall()
+                return render_template('admin/show_log.html', user_name=user_name,
+                                       all_log=all_log)
+    except Exception as e:
+        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
+        return redirect(url_for('home'))
 
 
 if __name__ == '__main__':
