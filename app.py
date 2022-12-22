@@ -32,6 +32,12 @@ def user_login():
         return False, False
 
 
+def make_log(action_name, user_ip, user_token, log_level, argument=None):
+    cursor.execute('''INSERT INTO log(name, user_ip, user_token, argument, log_level) VALUES (?,?, ?,?,?)''',
+                   (str(action_name), str(user_ip), str(user_token), argument, log_level))
+    con.commit()
+
+
 con = mariadb.connect(user="cantina", password="LeMdPDeTest", host="localhost", port=3306, database="cantina_db")
 cursor = con.cursor()
 cursor.execute("CREATE TABLE IF NOT EXISTS user(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
@@ -131,8 +137,7 @@ def login():
 
         try:
             if len(row) >= 1:
-                cursor.execute('''INSERT INTO log(name, user_ip, user_token, log_level) VALUES (?,?,?,?)''', ('login', str(request.remote_addr), str(row[2]), 1))
-                con.commit()
+                make_log('login', request.remote_addr, row[2], 1)
                 resp = make_response(redirect(url_for('hello_world')))
                 resp.set_cookie('userID', row[2])
                 return resp
@@ -161,6 +166,8 @@ def upload_file():
 
         f = request.files['file']
         f.save(os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
+        make_log('upload_file', request.remote_addr, request.cookies.get('userID'), 1,
+                 os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
         return redirect(url_for('file', path=args.get('path')))
 
 
@@ -196,11 +203,11 @@ def admin_home():
 
 @app.route('/admin/usermanager/')
 @app.route('/admin/usermanager/<name>')
-def admin_user_manager(name=None):
+def admin_user_manager(user_name=None):
     admin_and_login = user_login()
     if admin_and_login[0] and admin_and_login[1]:
-        if name:
-            cursor.execute('''SELECT * FROM user WHERE user_name=?''', (name,))
+        if user_name:
+            cursor.execute('''SELECT * FROM user WHERE user_name=?''', (user_name,))
             user_account = cursor.fetchall()
             return render_template('admin/specific_user_manager.html', user_account=user_account[0])
         else:
@@ -233,11 +240,13 @@ def admin_add_user():
                 except Exception as e:
                     print(e)
                     admin = False
-
+                newUUID = str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())))
                 cursor.execute('''INSERT INTO user(token, user_name, password, admin) VALUES (?, ?, ?, ?)''', (
-                    str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1()))), request.form['uname'],
+                    newUUID, request.form['uname'],
                     hash_perso(request.form['pword2']), admin))
                 con.commit()
+                make_log('add_user', request.remote_addr, request.cookies.get('userID'), 2,
+                         'Created user token: '+newUUID)
                 return redirect(url_for('admin_user_manager'))
 
     else:
@@ -245,12 +254,12 @@ def admin_add_user():
 
 
 @app.route('/admin/show_log/')
-@app.route('/admin/show_log/<id>')
-def admin_show_log(id=None):
+@app.route('/admin/show_log/<log_id>')
+def admin_show_log(log_id=None):
     admin_and_login = user_login()
     if admin_and_login[0] and admin_and_login[1]:
-        if id:
-            cursor.execute('''SELECT * FROM log WHERE ID=?''', (id,))
+        if log_id:
+            cursor.execute('''SELECT * FROM log WHERE ID=?''', (log_id,))
             log = cursor.fetchone()
             return render_template('admin/specific_log.html', log=log)
         else:
