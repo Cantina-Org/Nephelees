@@ -43,7 +43,7 @@ cursor = con.cursor()
 cursor.execute("CREATE TABLE IF NOT EXISTS user(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
                "user_name TEXT, password TEXT, admin BOOL, online BOOL, last_online TEXT)")
 cursor.execute("CREATE TABLE IF NOT EXISTS log(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, name TEXT, user_ip text,"
-               "user_token TEXT, argument TEXT, log_level INT)")
+               "user_token TEXT, argument TEXT, log_level INT, date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
 
 # cursor.execute(f"""INSERT INTO user(token, user_name, password, admin) VALUES ('{uuid.uuid3(uuid.uuid1(),
 # str(uuid.uuid1()))}', 'matbe2', '{hash_perso("Asvel2021_._")}', 0)""")
