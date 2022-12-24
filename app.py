@@ -44,7 +44,7 @@ cursor.execute("CREATE TABLE IF NOT EXISTS user(ID INT PRIMARY KEY NOT NULL AUTO
                "user_name TEXT, password TEXT, admin BOOL, online BOOL, last_online TEXT)")
 cursor.execute("CREATE TABLE IF NOT EXISTS log(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, name TEXT, user_ip text,"
                "user_token TEXT, argument TEXT, log_level INT, date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
-
+# cursor.execute("CREATE TABLE IF NOT EXISTS ")
 # cursor.execute(f"""INSERT INTO user(token, user_name, password, admin) VALUES ('{uuid.uuid3(uuid.uuid1(),
 # str(uuid.uuid1()))}', 'matbe2', '{hash_perso("Asvel2021_._")}', 0)""")
 
@@ -198,8 +198,8 @@ def admin_home():
             main_folder_size = subprocess.check_output(['du', '-sh', dir_path]).split()[0].decode('utf-8')
             cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
             user_name = cursor.fetchall()
-            return render_template('admin/home.html', data=user_name, file_number=count, main_folder_size=main_folder_size)
-
+            return render_template('admin/home.html', data=user_name, file_number=count,
+                                   main_folder_size=main_folder_size)
         else:
             return redirect(url_for('home'))
 
@@ -209,7 +209,7 @@ def admin_home():
 
 
 @app.route('/admin/usermanager/')
-@app.route('/admin/usermanager/<name>')
+@app.route('/admin/usermanager/<user_name>')
 def admin_user_manager(user_name=None):
     try:
         admin_and_login = user_login()
@@ -225,7 +225,6 @@ def admin_user_manager(user_name=None):
                 user_name = cursor.fetchall()
                 return render_template('admin/user_manager.html', user_name=user_name,
                                        all_account=all_account)
-
         else:
             return redirect(url_for('home'))
     except Exception as e:
@@ -260,7 +259,6 @@ def admin_add_user():
                     make_log('add_user', request.remote_addr, request.cookies.get('userID'), 2,
                              'Created user token: ' + newUUID)
                     return redirect(url_for('admin_user_manager'))
-
         else:
             return redirect(url_for('home'))
     except Exception as e:
