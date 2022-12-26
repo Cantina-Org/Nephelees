@@ -16,7 +16,7 @@
     <button onclick="create_folder('{{ path }}')">Create Folder</button>
     <a href="{{ url_for('file', path=lastPath) }}">..</a>
     {% for item in dir %}
-        <li><a href={{ url_for('file', path=path+item) }}>{{ item }}</a></li>
+        <li><a href={{ url_for('file', path=path+item+'/') }}>{{ item }}</a></li>
         <button onclick="delete_folder('{{ path }}', '{{ item }}')"><img src="https://img.icons8.com/ios/50/null/trash--v1.png" alt="Une poubelle pour supprimer ce dossier"/></button>
     {% endfor %}
     <br>
