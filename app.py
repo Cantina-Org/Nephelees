@@ -6,6 +6,7 @@ import hashlib
 import os
 import subprocess
 import uuid
+import shutil
 
 
 def hash_perso(passwordtohash):
@@ -47,8 +48,8 @@ cursor.execute("CREATE TABLE IF NOT EXISTS log(id INT PRIMARY KEY NOT NULL AUTO_
 
 con.commit()
 
-path2, filenames, lastPath = "", "", ""
-dir_path = os.path.abspath(os.getcwd()) + '/file_cloud'
+fd, filenames, lastPath = "", "", ""
+dir_path = os.path.abspath(os.getcwd()) + '/file_cloud/'
 app = Flask(__name__)
 app.config['UPLOAD_PATH'] = dir_path
 
@@ -61,66 +62,88 @@ def home():  # put application's code here
 
 @app.route('/my/file/')
 def file():
-    global path2, filenames, lastPath
-    user_token = request.cookies.get('userID')
-    cursor.execute(f'''SELECT token FROM user WHERE admin''')
-    row = cursor.fetchall()
-
-    if not [tup for tup in row if user_token in tup]:
-        return redirect(url_for('home'))
-
+    global filenames, lastPath, fd
+    actual_path = '/'
     args = request.args
-    lastPath = ""
     work_file_in_dir, work_dir = [], []
+    user_token = request.cookies.get('userID')
+
+    cursor.execute(f'''SELECT work_Dir, admin FROM user WHERE token = ?''', (user_token,))
+    row = cursor.fetchone()
 
     if not args.getlist('path'):
-        for (dirpath, dirnames, filenames) in walk(dir_path):
-            work_file_in_dir.extend(filenames)
-            work_dir.extend(dirnames)
-            break
+        if row[1]:
+            for (dirpath, dirnames, filenames) in walk(dir_path):
+                work_file_in_dir.extend(filenames)
+                work_dir.extend(dirnames)
+                break
+        elif not row[1]:
+            for (dirpath, dirnames, filenames) in walk(row[0]):
+                work_file_in_dir.extend(filenames)
+                work_dir.extend(dirnames)
+                break
 
     else:
-        last_path_1 = args.get('path')
-        last_path_1 = last_path_1[:-1].split("/")
+        actual_path_not_corrected = args.get('path').split("/")
+        for i in actual_path_not_corrected:
+            if i:
+                actual_path += i + '/'
+
+        last_path_1 = actual_path[:-1].split("/")
         for i in range(0, len(last_path_1) - 1):
             lastPath = lastPath + last_path_1[i] + '/'
 
-        for (dirpath, dirnames, filenames) in walk(dir_path + args.get('path')):
-            work_file_in_dir.extend(filenames)
-            work_dir.extend(dirnames)
-            break
-
-    if not args.get('path'):
-        path2 = "/"
-
-    elif args.get('path') != "/":
-        path2 = args.get('path') + "/"
-
-    elif args.get('path') == "/":
-        path2 = args.get('path')
+        if row[1]:
+            for (dirpath, dirnames, filenames) in walk(dir_path + '/' + args.get('path')):
+                work_file_in_dir.extend(filenames)
+                work_dir.extend(dirnames)
+                break
+            print(dir_path + args.get('path'))
+        elif not row[1]:
+            for (dirpath, dirnames, filenames) in walk(row[0] + args.get('path')):
+                work_file_in_dir.extend(filenames)
+                work_dir.extend(dirnames)
+                break
 
     if not args.get('action') or args.get('action') == 'show':
-        return render_template('myfile.html', dir=work_dir, file=work_file_in_dir, path=path2, lastPath=lastPath)
+        return render_template('myfile.html', dir=work_dir, file=work_file_in_dir, path=actual_path,
+                               lastPath=lastPath)
 
     elif args.get('action') == "deleteFile" and args.get('workFile') and args.get('workFile') in filenames:
-        os.remove(dir_path + path2 + args.get('workFile'))
-        return render_template("redirect/r-myfile.html", path="/my/file/?path=/", lastPath=lastPath)
+        if row[1]:
+            os.remove(dir_path + actual_path + args.get('workFile'))
+        elif not row[1]:
+            os.remove(row[0] + '/' + actual_path + args.get('workFile'))
+        return render_template("redirect/r-myfile.html", path="/my/file/?path=/"+actual_path, lastPath=lastPath)
 
     elif args.get('action') == "createFile" and args.get('workFile'):
-        fd = os.open(dir_path + path2 + args.get('workFile'), os.O_RDWR | os.O_CREAT)
+        if row[1]:
+            fd = os.open(dir_path + args.get('path') + "/" + args.get('workFile'), os.O_RDWR | os.O_CREAT)
+        elif not row[1]:
+            fd = os.open(row[0] + '/' + args.get('path') + "/" + args.get('workFile'), os.O_RDWR | os.O_CREAT)
         os.close(fd)
-        return render_template("redirect/r-myfile.html", path="/my/file/?path=/", lastPath=lastPath)
+        print('path: '+args.get('path'))
+        return render_template("redirect/r-myfile.html", path="/my/file/?path=/"+actual_path, lastPath=lastPath)
 
-    elif args.get('action') == "deleteFolder" and args.get('workFile') and args.get('workFile') in filenames:
-        os.rmdir(dir_path + path2 + args.get('workFile'))
-        return render_template("redirect/r-myfile.html", path="/my/file/?path=/", lastPath=lastPath)
+    elif args.get('action') == "deleteFolder" and args.get('workFile') and args.get('workFile') in work_dir:
+        if row[1]:
+            shutil.rmtree(dir_path + actual_path + "/" + args.get('workFile'))
+        elif not row[0]:
+            shutil.rmtree(row[0] + '/' + actual_path + args.get('workFile'))
+        print(lastPath)
+        print(actual_path)
+        return render_template("redirect/r-myfile.html", path="/my/file/?path=/"+actual_path)
 
     elif args.get('action') == "createFolder" and args.get('workFile'):
-        os.mkdir(dir_path + path2 + args.get('workFile'))
-        return render_template("redirect/r-myfile.html", path="/my/file/?path=/", lastPath=lastPath)
+        if row[1]:
+            os.mkdir(dir_path + actual_path + args.get('workFile'))
+        elif not row[1]:
+            os.mkdir(row[0] + '/' + actual_path + args.get('workFile'))
+        return render_template("redirect/r-myfile.html", path="/my/file/?path=/"+args.get('path'), lastPath=lastPath)
 
     else:
-        return render_template('myfile.html', dir=work_dir, file=work_file_in_dir, path=path2, lastPath=lastPath)
+        return render_template('myfile.html', dir=work_dir, file=work_file_in_dir, path=args.get('path') + "/",
+                               lastPath=lastPath)
 
 
 @app.route('/login', methods=['POST', 'GET'])
@@ -180,7 +203,7 @@ def download_file():
         return redirect(url_for('home'))
 
     make_log('Download file', request.remote_addr, request.cookies.get('userID'), 1,
-             dir_path+args.get('path')+args.get('item'))
+             dir_path + args.get('path') + args.get('item'))
     return send_from_directory(directory=dir_path + args.get('path'), path=args.get('item'))
 
 
@@ -249,11 +272,11 @@ def admin_add_user():
                         print(e)
                         admin = False
                     newUUID = str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())))
-                    cursor.execute('''INSERT INTO user(token, user_name, password, admin) VALUES (?, ?, ?, ?)''', (
-                        newUUID, request.form['uname'],
-                        hash_perso(request.form['pword2']), admin))
+                    cursor.execute('''INSERT INTO user(token, user_name, password, admin, work_Dir) VALUES (?, ?, ?, 
+                            ?, ?)''', (newUUID, request.form['uname'], hash_perso(request.form['pword2']), admin,
+                                       dir_path + '/' + secure_filename(request.form['uname'])))
                     con.commit()
-                    os.mkdir(dir_path+'/'+secure_filename(request.form['uname']))
+                    os.mkdir(dir_path + '/' + secure_filename(request.form['uname']))
                     make_log('add_user', request.remote_addr, request.cookies.get('userID'), 2,
                              'Created user token: ' + newUUID)
                     return redirect(url_for('admin_user_manager'))
