@@ -63,7 +63,7 @@ def home():  # put application's code here
 @app.route('/my/file/')
 def file():
     global filenames, lastPath, fd
-    actual_path = '/'
+    actual_path, lastPath = '/', '/'
     args = request.args
     work_file_in_dir, work_dir = [], []
     user_token = request.cookies.get('userID')
@@ -91,7 +91,8 @@ def file():
 
         last_path_1 = actual_path[:-1].split("/")
         for i in range(0, len(last_path_1) - 1):
-            lastPath = lastPath + last_path_1[i] + '/'
+            if last_path_1[i]:
+                lastPath = lastPath + last_path_1[i] + '/'
 
         if row[1]:
             for (dirpath, dirnames, filenames) in walk(dir_path + '/' + args.get('path')):
@@ -126,12 +127,14 @@ def file():
         return render_template("redirect/r-myfile.html", path="/my/file/?path=/"+actual_path, lastPath=lastPath)
 
     elif args.get('action') == "deleteFolder" and args.get('workFile') and args.get('workFile') in work_dir:
+        print(row)
         if row[1]:
+            print(dir_path + actual_path + "/" + args.get('workFile'))
             shutil.rmtree(dir_path + actual_path + "/" + args.get('workFile'))
-        elif not row[0]:
+        elif not row[1]:
+            print(row[0] + '/' + actual_path + args.get('workFile'))
             shutil.rmtree(row[0] + '/' + actual_path + args.get('workFile'))
-        print(lastPath)
-        print(actual_path)
+
         return render_template("redirect/r-myfile.html", path="/my/file/?path=/"+actual_path)
 
     elif args.get('action') == "createFolder" and args.get('workFile'):
