@@ -7,6 +7,8 @@ import os
 import subprocess
 import uuid
 import shutil
+import random
+import string
 
 
 def hash_perso(passwordtohash):
@@ -45,11 +47,14 @@ cursor.execute("CREATE TABLE IF NOT EXISTS user(ID INT PRIMARY KEY NOT NULL AUTO
                "user_name TEXT, password TEXT, admin BOOL, work_Dir TEXT, online BOOL, last_online TEXT)")
 cursor.execute("CREATE TABLE IF NOT EXISTS log(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, name TEXT, user_ip text,"
                "user_token TEXT, argument TEXT, log_level INT, date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
-
+cursor.execute("CREATE TABLE IF NOT EXISTS file_sharing(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, file_name TEXT, "
+               "file_owner text, file_short_name TEXT, login_to_show BOOL DEFAULT 1, "
+               "date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
 con.commit()
 
-fd, filenames, lastPath = "", "", ""
+fd, filenames, lastPath, rand_name = "", "", "", ""
 dir_path = os.path.abspath(os.getcwd()) + '/file_cloud/'
+share_path = os.path.abspath(os.getcwd()) + '/share/'
 app = Flask(__name__)
 app.config['UPLOAD_PATH'] = dir_path
 
@@ -62,13 +67,13 @@ def home():  # put application's code here
 
 @app.route('/my/file/')
 def file():
-    global filenames, lastPath, fd
+    global filenames, lastPath, fd, rand_name
     actual_path, lastPath = '/', '/'
     args = request.args
     work_file_in_dir, work_dir = [], []
     user_token = request.cookies.get('userID')
 
-    cursor.execute(f'''SELECT work_Dir, admin FROM user WHERE token = ?''', (user_token,))
+    cursor.execute(f'''SELECT work_Dir, admin, user_name FROM user WHERE token = ?''', (user_token,))
     row = cursor.fetchone()
 
     if not args.getlist('path'):
@@ -115,7 +120,7 @@ def file():
             os.remove(dir_path + actual_path + args.get('workFile'))
         elif not row[1]:
             os.remove(row[0] + '/' + actual_path + args.get('workFile'))
-        return render_template("redirect/r-myfile.html", path="/my/file/?path=/"+actual_path, lastPath=lastPath)
+        return render_template("redirect/r-myfile.html", path="/my/file/?path=/" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "createFile" and args.get('workFile'):
         if row[1]:
@@ -123,7 +128,7 @@ def file():
         elif not row[1]:
             fd = os.open(row[0] + '/' + args.get('path') + "/" + args.get('workFile'), os.O_RDWR | os.O_CREAT)
         os.close(fd)
-        return render_template("redirect/r-myfile.html", path="/my/file/?path=/"+actual_path, lastPath=lastPath)
+        return render_template("redirect/r-myfile.html", path="/my/file/?path=/" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "deleteFolder" and args.get('workFile') and args.get('workFile') in work_dir:
         if row[1]:
@@ -131,21 +136,29 @@ def file():
         elif not row[1]:
             shutil.rmtree(row[0] + '/' + actual_path + args.get('workFile'))
 
-        return render_template("redirect/r-myfile.html", path="/my/file/?path=/"+actual_path)
+        return render_template("redirect/r-myfile.html", path="/my/file/?path=/" + actual_path)
+
+    elif args.get('action') == "shareFile" and args.get('workFile') and args.get('loginToShow'):
+        for i in random.choices(string.ascii_lowercase, k=10):
+            rand_name += i
+        if row[1]:
+            shutil.copy2(dir_path + actual_path + args.get('workFile'),
+                         share_path + row[2] + '/' + args.get('workFile'))
+        elif not row[1]:
+            shutil.copy2(row[0] + '/' + actual_path + args.get('workFile'),
+                         share_path + row[2] + '/' + args.get('workFile'))
+        cursor.execute('''INSERT INTO file_sharing(file_name, file_owner, file_short_name, login_to_show) 
+                                    VALUES (?, ?, ?, ?)''', (args.get('workFile'), row[2],
+                                                             rand_name, args.get('loginToShow')))
+        con.commit()
+        return render_template("redirect/r-myfile.html", path="/my/file/?path=/" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "createFolder" and args.get('workFile'):
         if row[1]:
             os.mkdir(dir_path + actual_path + args.get('workFile'))
         elif not row[1]:
             os.mkdir(row[0] + '/' + actual_path + args.get('workFile'))
-        return render_template("redirect/r-myfile.html", path="/my/file/?path=/"+actual_path, lastPath=lastPath)
-
-    elif args.get('action') == "shareFile" and args.get('workFile'):
-        if row[1]:
-            os.mkdir(dir_path + actual_path + args.get('workFile'))
-        elif not row[1]:
-            os.mkdir(row[0] + '/' + actual_path + args.get('workFile'))
-        return render_template("redirect/r-myfile.html", path="/my/file/?path=/"+actual_path, lastPath=lastPath)
+        return render_template("redirect/r-myfile.html", path="/my/file/?path=/" + actual_path, lastPath=lastPath)
 
     else:
         return render_template('myfile.html', dir=work_dir, file=work_file_in_dir, path=args.get('path') + "/",
@@ -277,14 +290,14 @@ def admin_add_user():
                     except Exception as e:
                         print(e)
                         admin = False
-                    newUUID = str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())))
+                    new_uuid = str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())))
                     cursor.execute('''INSERT INTO user(token, user_name, password, admin, work_Dir) VALUES (?, ?, ?, 
-                            ?, ?)''', (newUUID, request.form['uname'], hash_perso(request.form['pword2']), admin,
+                            ?, ?)''', (new_uuid, request.form['uname'], hash_perso(request.form['pword2']), admin,
                                        dir_path + '/' + secure_filename(request.form['uname'])))
                     con.commit()
                     os.mkdir(dir_path + '/' + secure_filename(request.form['uname']))
                     make_log('add_user', request.remote_addr, request.cookies.get('userID'), 2,
-                             'Created user token: ' + newUUID)
+                             'Created user token: ' + new_uuid)
                     return redirect(url_for('admin_user_manager'))
         else:
             return redirect(url_for('home'))
