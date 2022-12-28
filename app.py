@@ -123,16 +123,12 @@ def file():
         elif not row[1]:
             fd = os.open(row[0] + '/' + args.get('path') + "/" + args.get('workFile'), os.O_RDWR | os.O_CREAT)
         os.close(fd)
-        print('path: '+args.get('path'))
         return render_template("redirect/r-myfile.html", path="/my/file/?path=/"+actual_path, lastPath=lastPath)
 
     elif args.get('action') == "deleteFolder" and args.get('workFile') and args.get('workFile') in work_dir:
-        print(row)
         if row[1]:
-            print(dir_path + actual_path + "/" + args.get('workFile'))
             shutil.rmtree(dir_path + actual_path + "/" + args.get('workFile'))
         elif not row[1]:
-            print(row[0] + '/' + actual_path + args.get('workFile'))
             shutil.rmtree(row[0] + '/' + actual_path + args.get('workFile'))
 
         return render_template("redirect/r-myfile.html", path="/my/file/?path=/"+actual_path)
@@ -142,7 +138,14 @@ def file():
             os.mkdir(dir_path + actual_path + args.get('workFile'))
         elif not row[1]:
             os.mkdir(row[0] + '/' + actual_path + args.get('workFile'))
-        return render_template("redirect/r-myfile.html", path="/my/file/?path=/"+args.get('path'), lastPath=lastPath)
+        return render_template("redirect/r-myfile.html", path="/my/file/?path=/"+actual_path, lastPath=lastPath)
+
+    elif args.get('action') == "shareFile" and args.get('workFile'):
+        if row[1]:
+            os.mkdir(dir_path + actual_path + args.get('workFile'))
+        elif not row[1]:
+            os.mkdir(row[0] + '/' + actual_path + args.get('workFile'))
+        return render_template("redirect/r-myfile.html", path="/my/file/?path=/"+actual_path, lastPath=lastPath)
 
     else:
         return render_template('myfile.html', dir=work_dir, file=work_file_in_dir, path=args.get('path') + "/",

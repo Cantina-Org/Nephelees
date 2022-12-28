@@ -9,6 +9,7 @@
     <script src="{{ url_for('static', filename="delete_folder.js") }}"></script>
     <script src="{{ url_for('static', filename="create_folder.js") }}"></script>
     <script src="{{ url_for('static', filename="create_file.js") }}"></script>
+    <script src="{{ url_for('static', filename="share_file.js") }}"></script>
 </head>
 <body>
     <button type = "button" onclick="window.location.href='{{ url_for('upload_file', path=path) }}'">Upload File</button>
@@ -25,6 +26,7 @@
             <li style="display: inline-block;">{{ item }}</li>
             <button onclick="delete_file('{{ path }}', '{{ item }}')"><img src="https://img.icons8.com/ios/50/null/trash--v1.png" alt="Une poubelle pour supprimer ce fichier"/></button>
             <button onclick="window.location.href='{{ url_for('download_file', path=path, item=item) }}'"><img src="https://img.icons8.com/ios/50/null/download-from-cloud--v1.png" alt="Un nuage avec une flèche qui descends pour télécharger le fichier"/></button>
+            <button onclick="share_file('{{ path }}', '{{ item }}'); "><img src="https://img.icons8.com/ios/50/null/trash--v1.png" alt="Une poubelle pour supprimer ce fichier"/></button>
         </div>
     {% endfor %}
 </body>
