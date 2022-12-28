@@ -351,14 +351,19 @@ def file_share(short_name=None):
 def admin_show_share_file():
     admin_and_login = user_login()
     if admin_and_login[0] and admin_and_login[1]:
+        cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
+        user_name = cursor.fetchone()
         if request.args.get('randomName'):
-            cursor.execute('''delete from file_sharing where file_short_name = ?;''', (request.args.get('randomName'),))
+            cursor.execute('''SELECT file_name, file_owner FROM file_sharing WHERE file_short_name=?''',
+                           (request.args.get('randomName'),))
+            row = cursor.fetchone()
+            os.remove(share_path+row[1]+'/'+row[0])
+            cursor.execute('''DELETE FROM file_sharing WHERE file_short_name = ?;''', (request.args.get('randomName'),))
             con.commit()
 
         cursor.execute('''SELECT * FROM file_sharing''')
         all_share_file = cursor.fetchall()
-        cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
-        user_name = cursor.fetchone()
+
         return render_template('admin/show_share_file.html', user_name=user_name,
                                all_share_file=all_share_file)
 
