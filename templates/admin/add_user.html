@@ -8,15 +8,15 @@
 <body>
     <form action="{{ url_for('admin_add_user') }}" method="post">
         <label>User Name: </label>
-        <input type="text" placeholder="Enter Username" name="uname" required><br>
+        <label><input type="text" placeholder="Enter Username" name="uname" required></label><br>
         <label>User email: </label>
-        <input type="email" placeholder="Enter an email" name="email" required><br>
+        <label><input type="email" placeholder="Enter an email" name="email" required></label><br>
         <label>User Password: </label>
-        <input type="password" placeholder="Enter a password" name="pword1" required><br>
+        <label><input type="password" placeholder="Enter a password" name="pword1" required></label><br>
         <label>User Password confirmation: </label>
-        <input type="password" placeholder="Enter a password" name="pword2" required><br>
+        <label><input type="password" placeholder="Enter a password" name="pword2" required></label><br>
         <label>User Permission</label>
-        <input type="checkbox" name="admin"><br>
+        <label><input type="checkbox" name="admin"></label><br>
         <button type="submit">Submit User</button>
     </form>
 </body>
