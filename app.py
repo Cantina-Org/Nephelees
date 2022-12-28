@@ -328,6 +328,20 @@ def admin_show_log(log_id=None):
         return redirect(url_for('home'))
 
 
+@app.route('/file_share/<short_name>')
+def file_share(short_name=None):
+    cursor.execute('''SELECT * FROM file_sharing WHERE file_short_name=?''', (short_name,))
+    row = cursor.fetchone()
+    is_login = user_login()
+    if row[4]:
+        if is_login[0]:
+            return send_from_directory(directory=share_path+'/'+row[2], path=row[1])
+        else:
+            return url_for('login')
+    elif not row[4]:
+        return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
+
+
 if __name__ == '__main__':
     app.add_url_rule('/favicon.ico', redirect_to=url_for('static', filename='static/favicon.ico'))
     app.run()
