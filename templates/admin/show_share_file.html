@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <title>Cantina - Admin Show Log</title>
+</head>
+<body>
+    <h1>Hello {{ user_name[0] }}!</h1>
+    <hr style="height:25px; visibility:hidden;" />
+    {% for i in all_share_file %}
+        <li style="{% if i[0] % 2 == 0 %}background-color: lightblue;{% else %}background-color: black;{% endif %}">{{ i[0] }} - {{ i[1] }} - {{ i[2] }} - {{ i[3] }} - <a href="{{url_for('admin_show_share_file', randomName=i[3])}}">DELETE IT</a></li>
+    {% endfor %}
+</body>
+</html>

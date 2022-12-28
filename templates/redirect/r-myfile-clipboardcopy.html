@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <script src="{{ url_for('static', filename="share_file.js") }}"></script>
+    <title>Cantina - Redirect</title>
+</head>
+<body>
+    <script>
+        window.location.replace('{{ url_for('file', path=path) }}')
+    </script>
+</body>
+</html>
