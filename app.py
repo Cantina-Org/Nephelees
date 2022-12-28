@@ -34,7 +34,9 @@ def user_login():
         else:
             return False, False
     except IndexError as e:
+        print(e)
         return 'UserNotFound'
+
 
 def make_log(action_name, user_ip, user_token, log_level, argument=None):
     cursor.execute('''INSERT INTO log(name, user_ip, user_token, argument, log_level) VALUES (?,?, ?,?,?)''',
@@ -69,7 +71,7 @@ def home():  # put application's code here
 @app.route('/my/file/')
 def file():
     global filenames, lastPath, fd, rand_name
-    actual_path, lastPath = '/', '/'
+    actual_path, lastPath, rand_name = '/', '/', ''
     args = request.args
     work_file_in_dir, work_dir = [], []
     user_token = request.cookies.get('userID')
@@ -105,7 +107,6 @@ def file():
                 work_file_in_dir.extend(filenames)
                 work_dir.extend(dirnames)
                 break
-            print(dir_path + args.get('path'))
         elif not row[1]:
             for (dirpath, dirnames, filenames) in walk(row[0] + args.get('path')):
                 work_file_in_dir.extend(filenames)
@@ -152,7 +153,8 @@ def file():
                                     VALUES (?, ?, ?, ?)''', (args.get('workFile'), row[2],
                                                              rand_name, args.get('loginToShow')))
         con.commit()
-        return render_template("redirect/r-myfile.html", path="/my/file/?path=/" + actual_path, lastPath=lastPath)
+        return render_template("redirect/r-myfile-clipboardcopy.html", short_name=rand_name,
+                               path="/my/file/?path=/" + actual_path)
 
     elif args.get('action') == "createFolder" and args.get('workFile'):
         if row[1]:
@@ -343,6 +345,31 @@ def file_share(short_name=None):
 
     elif not row[4]:
         return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
+
+
+@app.route('/admin/show_share_file/')
+def admin_show_share_file():
+    admin_and_login = user_login()
+    if admin_and_login[0] and admin_and_login[1]:
+        cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
+        user_name = cursor.fetchone()
+        if request.args.get('randomName'):
+            cursor.execute('''SELECT file_name, file_owner FROM file_sharing WHERE file_short_name=?''',
+                           (request.args.get('randomName'),))
+            row = cursor.fetchone()
+            os.remove(share_path+row[1]+'/'+row[0])
+            cursor.execute('''DELETE FROM file_sharing WHERE file_short_name = ?;''', (request.args.get('randomName'),))
+            con.commit()
+
+        cursor.execute('''SELECT * FROM file_sharing''')
+        all_share_file = cursor.fetchall()
+
+        return render_template('admin/show_share_file.html', user_name=user_name,
+                               all_share_file=all_share_file)
+
+    else:
+        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2)
+        return redirect(url_for('home'))
 
 
 if __name__ == '__main__':

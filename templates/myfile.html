@@ -10,6 +10,7 @@
     <script src="{{ url_for('static', filename="create_folder.js") }}"></script>
     <script src="{{ url_for('static', filename="create_file.js") }}"></script>
     <script src="{{ url_for('static', filename="share_file.js") }}"></script>
+
 </head>
 <body>
     <button type = "button" onclick="window.location.href='{{ url_for('upload_file', path=path) }}'">Upload File</button>
