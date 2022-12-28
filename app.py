@@ -26,14 +26,15 @@ def hash_perso(passwordtohash):
 def user_login():
     cursor.execute('''SELECT user_name, admin FROM user WHERE token = ?''', (request.cookies.get('userID'),))
     data = cursor.fetchall()
-
-    if data[0][0] != '' and data[0][1]:
-        return True, True
-    elif data[0][0] != '' and not data[0][1]:
-        return True, False
-    else:
-        return False, False
-
+    try:
+        if data[0][0] != '' and data[0][1]:
+            return True, True
+        elif data[0][0] != '' and not data[0][1]:
+            return True, False
+        else:
+            return False, False
+    except IndexError as e:
+        return 'UserNotFound'
 
 def make_log(action_name, user_ip, user_token, log_level, argument=None):
     cursor.execute('''INSERT INTO log(name, user_ip, user_token, argument, log_level) VALUES (?,?, ?,?,?)''',
@@ -334,10 +335,12 @@ def file_share(short_name=None):
     row = cursor.fetchone()
     is_login = user_login()
     if row[4]:
+
         if is_login[0]:
             return send_from_directory(directory=share_path+'/'+row[2], path=row[1])
-        else:
+        elif is_login == 'UserNotFound':
             return url_for('login')
+
     elif not row[4]:
         return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
 
