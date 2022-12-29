@@ -9,6 +9,7 @@ import uuid
 import shutil
 import random
 import string
+import tarfile
 
 
 def hash_perso(passwordtohash):
@@ -44,6 +45,11 @@ def make_log(action_name, user_ip, user_token, log_level, argument=None):
     con.commit()
 
 
+def make_tarfile(output_filename, source_dir):
+    with tarfile.open(output_filename, "w:gz") as tar:
+        tar.add(source_dir, arcname=os.path.basename(source_dir))
+
+
 con = mariadb.connect(user="cantina", password="LeMdPDeTest", host="localhost", port=3306, database="cantina_db")
 cursor = con.cursor()
 cursor.execute("CREATE TABLE IF NOT EXISTS user(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
@@ -75,6 +81,9 @@ def file():
     args = request.args
     work_file_in_dir, work_dir = [], []
     user_token = request.cookies.get('userID')
+
+    for i in random.choices(string.ascii_lowercase, k=10):
+        rand_name += i
 
     cursor.execute(f'''SELECT work_Dir, admin, user_name FROM user WHERE token = ?''', (user_token,))
     row = cursor.fetchone()
@@ -122,7 +131,7 @@ def file():
             os.remove(dir_path + actual_path + args.get('workFile'))
         elif not row[1]:
             os.remove(row[0] + '/' + actual_path + args.get('workFile'))
-        return render_template("redirect/r-myfile.html", path="/my/file/?path=/" + actual_path, lastPath=lastPath)
+        return render_template("redirect/r-myfile.html", path="/my/file/?path=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "createFile" and args.get('workFile'):
         if row[1]:
@@ -130,7 +139,7 @@ def file():
         elif not row[1]:
             fd = os.open(row[0] + '/' + args.get('path') + "/" + args.get('workFile'), os.O_RDWR | os.O_CREAT)
         os.close(fd)
-        return render_template("redirect/r-myfile.html", path="/my/file/?path=/" + actual_path, lastPath=lastPath)
+        return render_template("redirect/r-myfile.html", path="/my/file/?path=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "deleteFolder" and args.get('workFile') and args.get('workFile') in work_dir:
         if row[1]:
@@ -138,11 +147,16 @@ def file():
         elif not row[1]:
             shutil.rmtree(row[0] + '/' + actual_path + args.get('workFile'))
 
-        return render_template("redirect/r-myfile.html", path="/my/file/?path=/" + actual_path)
+        return render_template("redirect/r-myfile.html", path="/my/file/?path=" + actual_path)
+
+    elif args.get('action') == "createFolder" and args.get('workFile'):
+        if row[1]:
+            os.mkdir(dir_path + actual_path + args.get('workFile'))
+        elif not row[1]:
+            os.mkdir(row[0] + '/' + actual_path + args.get('workFile'))
+        return render_template("redirect/r-myfile.html", path="/my/file/?path=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "shareFile" and args.get('workFile') and args.get('loginToShow'):
-        for i in random.choices(string.ascii_lowercase, k=10):
-            rand_name += i
         if row[1]:
             shutil.copy2(dir_path + actual_path + args.get('workFile'),
                          share_path + row[2] + '/' + args.get('workFile'))
@@ -154,14 +168,22 @@ def file():
                                                              rand_name, args.get('loginToShow')))
         con.commit()
         return render_template("redirect/r-myfile-clipboardcopy.html", short_name=rand_name,
-                               path="/my/file/?path=/" + actual_path)
+                               path="/my/file/?path=" + actual_path)
 
-    elif args.get('action') == "createFolder" and args.get('workFile'):
+    elif args.get('action') == "shareFolder" and args.get('workFolder') and args.get('loginToShow'):
+        print('ooo')
         if row[1]:
-            os.mkdir(dir_path + actual_path + args.get('workFile'))
+            make_tarfile(share_path+row[2]+'/'+args.get('workFolder')+'.tar.gz',
+                         dir_path+actual_path+args.get('workFolder'))
         elif not row[1]:
-            os.mkdir(row[0] + '/' + actual_path + args.get('workFile'))
-        return render_template("redirect/r-myfile.html", path="/my/file/?path=/" + actual_path, lastPath=lastPath)
+            make_tarfile(share_path+row[2]+'/'+args.get('workFolder')+'.tar.gz',
+                         row[0]+'/'+actual_path+args.get('workFolder'))
+        cursor.execute('''INSERT INTO file_sharing(file_name, file_owner, file_short_name, login_to_show) 
+                                    VALUES (?, ?, ?, ?)''', (args.get('workFolder'), row[2],
+                                                             rand_name, args.get('loginToShow')))
+        con.commit()
+        return render_template("redirect/r-myfile-clipboardcopy.html", short_name=rand_name,
+                               path="/my/file/?path=" + actual_path)
 
     else:
         return render_template('myfile.html', dir=work_dir, file=work_file_in_dir, path=args.get('path') + "/",
