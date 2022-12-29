@@ -10,7 +10,7 @@
     <script src="{{ url_for('static', filename="create_folder.js") }}"></script>
     <script src="{{ url_for('static', filename="create_file.js") }}"></script>
     <script src="{{ url_for('static', filename="share_file.js") }}"></script>
-
+    <script src="{{ url_for('static', filename="share_folder.js") }}"></script>
 </head>
 <body>
     <button type = "button" onclick="window.location.href='{{ url_for('upload_file', path=path) }}'">Upload File</button>
@@ -20,8 +20,9 @@
     {% for item in dir %}
         <li><a href={{ url_for('file', path=path+item+'/') }}>{{ item }}</a></li>
         <button onclick="delete_folder('{{ path }}', '{{ item }}')"><img src="https://img.icons8.com/ios/50/null/trash--v1.png" alt="Une poubelle pour supprimer ce dossier"/></button>
+        <button onclick="share_folder('{{ path }}', '{{ item }}')"><img src="https://img.icons8.com/ios/50/null/link--v1.png" alt="Une poubelle pour supprimer ce dossier"/></button>
     {% endfor %}
-    <br>
+    <br><br><br>
     {% for item in file %}
         <div>
             <li style="display: inline-block;">{{ item }}</li>
