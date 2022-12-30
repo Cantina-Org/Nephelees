@@ -13,7 +13,10 @@ import tarfile
 
 
 def hash_perso(passwordtohash):
-    passw = passwordtohash.encode()
+    try:
+        passw = passwordtohash.encode()
+    except AttributeError:
+        return None
     passw = hashlib.md5(passw).hexdigest()
     passw = passw.encode()
     passw = hashlib.sha256(passw).hexdigest()
@@ -57,7 +60,7 @@ cursor.execute("CREATE TABLE IF NOT EXISTS user(ID INT PRIMARY KEY NOT NULL AUTO
 cursor.execute("CREATE TABLE IF NOT EXISTS log(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, name TEXT, user_ip text,"
                "user_token TEXT, argument TEXT, log_level INT, date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
 cursor.execute("CREATE TABLE IF NOT EXISTS file_sharing(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, file_name TEXT, "
-               "file_owner text, file_short_name TEXT, login_to_show BOOL DEFAULT 1, "
+               "file_owner text, file_short_name TEXT, login_to_show BOOL DEFAULT 1, password TEXT,"
                "date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
 con.commit()
 
@@ -163,24 +166,25 @@ def file():
         elif not row[1]:
             shutil.copy2(row[0] + '/' + actual_path + args.get('workFile'),
                          share_path + row[2] + '/' + args.get('workFile'))
-        cursor.execute('''INSERT INTO file_sharing(file_name, file_owner, file_short_name, login_to_show) 
-                                    VALUES (?, ?, ?, ?)''', (args.get('workFile'), row[2],
-                                                             rand_name, args.get('loginToShow')))
+        cursor.execute('''INSERT INTO file_sharing(file_name, file_owner, file_short_name, login_to_show, password) 
+                                    VALUES (?, ?, ?, ?, ?)''', (args.get('workFile'), row[2],
+                                                                rand_name, args.get('loginToShow'),
+                                                                hash_perso(args.get('password'))))
         con.commit()
         return render_template("redirect/r-myfile-clipboardcopy.html", short_name=rand_name,
                                path="/my/file/?path=" + actual_path)
 
     elif args.get('action') == "shareFolder" and args.get('workFolder') and args.get('loginToShow'):
-        print('ooo')
         if row[1]:
-            make_tarfile(share_path+row[2]+'/'+args.get('workFolder')+'.tar.gz',
-                         dir_path+actual_path+args.get('workFolder'))
+            make_tarfile(share_path + row[2] + '/' + args.get('workFolder') + '.tar.gz',
+                         dir_path + actual_path + args.get('workFolder'))
         elif not row[1]:
-            make_tarfile(share_path+row[2]+'/'+args.get('workFolder')+'.tar.gz',
-                         row[0]+'/'+actual_path+args.get('workFolder'))
-        cursor.execute('''INSERT INTO file_sharing(file_name, file_owner, file_short_name, login_to_show) 
-                                    VALUES (?, ?, ?, ?)''', (args.get('workFolder'), row[2],
-                                                             rand_name, args.get('loginToShow')))
+            make_tarfile(share_path + row[2] + '/' + args.get('workFolder') + '.tar.gz',
+                         row[0] + '/' + actual_path + args.get('workFolder'))
+        cursor.execute('''INSERT INTO file_sharing(file_name, file_owner, file_short_name, login_to_show, password) 
+                                    VALUES (?, ?, ?, ?, ?)''', (args.get('workFolder'), row[2],
+                                                                rand_name, args.get('loginToShow'),
+                                                                hash_perso(args.get('password'))))
         con.commit()
         return render_template("redirect/r-myfile-clipboardcopy.html", short_name=rand_name,
                                path="/my/file/?path=" + actual_path)
@@ -359,14 +363,21 @@ def file_share(short_name=None):
     row = cursor.fetchone()
     is_login = user_login()
     if row[4]:
-
         if is_login[0]:
-            return send_from_directory(directory=share_path+'/'+row[2], path=row[1])
+            return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
         elif is_login == 'UserNotFound':
             return url_for('login')
 
     elif not row[4]:
-        return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
+        if not row[5]:
+            return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
+        elif row[5] != "" and request.args.get('password') != "":
+            if hash_perso(request.args.get('password')) == row[5]:
+                return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
+            else:
+                return render_template('redirect/r-share-file-with-password.html', short_name=short_name)
+        elif row[5] != "" and request.args.get('password') == "":
+            return render_template('redirect/r-share-file-with-password.html', short_name=short_name)
 
 
 @app.route('/admin/show_share_file/')
@@ -379,7 +390,7 @@ def admin_show_share_file():
             cursor.execute('''SELECT file_name, file_owner FROM file_sharing WHERE file_short_name=?''',
                            (request.args.get('randomName'),))
             row = cursor.fetchone()
-            os.remove(share_path+row[1]+'/'+row[0])
+            os.remove(share_path + row[1] + '/' + row[0])
             cursor.execute('''DELETE FROM file_sharing WHERE file_short_name = ?;''', (request.args.get('randomName'),))
             con.commit()
 
