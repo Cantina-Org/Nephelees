@@ -1,6 +1,6 @@
 from werkzeug.utils import secure_filename
 from os import *
-from flask import Flask, render_template, request, url_for, redirect, make_response, send_from_directory
+from flask import Flask, render_template, request, url_for, redirect, make_response, send_from_directory, jsonify
 import mariadb
 import hashlib
 import os
@@ -62,6 +62,8 @@ cursor.execute("CREATE TABLE IF NOT EXISTS log(id INT PRIMARY KEY NOT NULL AUTO_
 cursor.execute("CREATE TABLE IF NOT EXISTS file_sharing(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, file_name TEXT, "
                "file_owner text, file_short_name TEXT, login_to_show BOOL DEFAULT 1, password TEXT,"
                "date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+cursor.execute("CREATE TABLE IF NOT EXISTS api(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, api_name TEXT,"
+               "api_desc TEXT, owner TEXT)")
 con.commit()
 
 fd, filenames, lastPath, rand_name = "", "", "", ""
@@ -403,6 +405,57 @@ def admin_show_share_file():
     else:
         make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2)
         return redirect(url_for('home'))
+
+
+@app.route('/admin/api_manager/')
+@app.route('/admin/api_manager/<api_id>')
+def admin_api_manager(api_id=None):
+    admin_and_login = user_login()
+    if admin_and_login[0] and admin_and_login[1]:
+        if api_id:
+            cursor.execute('''SELECT * FROM api WHERE ID=?''', (api_id,))
+            api = cursor.fetchall()
+            return render_template('admin/specific_api_manager.html', api=api[0])
+        else:
+            cursor.execute('''SELECT * FROM api''')
+            api = cursor.fetchall()
+            cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
+            user_name = cursor.fetchall()
+            return render_template('admin/api_manager.html', user_name=user_name, api=api)
+    else:
+        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2)
+        return redirect(url_for('home'))
+
+
+@app.route('/admin/add_api/', methods=['POST', 'GET'])
+def admin_add_api():
+    admin_and_login = user_login()
+    if admin_and_login[0] and admin_and_login[1]:
+        if request.method == 'GET':
+            cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
+            user_name = cursor.fetchall()
+            return render_template('admin/add_api.html', user_name=user_name)
+        elif request.method == 'POST':
+            new_uuid = str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())))
+            cursor.execute('''INSERT INTO api(token, api_name, api_desc, owner) VALUES (?, ?, ?, ?)''',
+                           (new_uuid, request.form.get('api-name'), request.form.get('api-desc'),
+                            request.cookies.get('userID')))
+            con.commit()
+            make_log('add_api', request.remote_addr, request.cookies.get('userID'), 2,
+                     'Created API token: ' + new_uuid)
+            return redirect(url_for('home'))
+    else:
+        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2)
+        return redirect(url_for('home'))
+
+
+@app.route('/api/v1/test_connection', methods=['POST'])
+def test_connection():
+    content = request.json
+    return jsonify({
+        "status-code": "200",
+        "api-token": content['api-token']
+    })
 
 
 if __name__ == '__main__':
