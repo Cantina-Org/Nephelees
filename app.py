@@ -405,31 +405,6 @@ def admin_show_share_file():
         return redirect(url_for('home'))
 
 
-@app.route('/confirm_password/<to_redirect>', methods=['POST', 'GET'])
-def confirm_password(to_redirect):
-    if request.method == 'POST':
-        pword = hash_perso(request.form.get('pword1'))
-        cursor.execute('''SELECT password, admin FROM user WHERE token = ?''', (request.cookies.get('userID'),))
-        row = cursor.fetchone()
-        admin_redirection = url_for(to_redirect).split('/')
-        if pword == row[0]:
-            if admin_redirection[1] == 'admin' and row[1]:
-                return redirect(url_for(to_redirect))
-            elif admin_redirection[1] == 'admin' and not row[1]:
-                return redirect(url_for('home'))
-            else:
-                return redirect(url_for(to_redirect))
-        else:
-            make_log('Confirmation Error', request.remote_addr, request.cookies.get('userID'), 3,
-                     'to_redirect = ' + to_redirect)
-            return redirect(url_for('home'))
-    elif request.method == 'GET':
-        if request.cookies.get('userID'):
-            return render_template('confirme_password.html', to_redirect=to_redirect)
-        else:
-            return redirect(url_for('login'))
-
-
 if __name__ == '__main__':
     app.add_url_rule('/favicon.ico', redirect_to=url_for('static', filename='static/favicon.ico'))
     app.run()
