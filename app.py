@@ -64,13 +64,17 @@ cursor.execute("CREATE TABLE IF NOT EXISTS file_sharing(id INT PRIMARY KEY NOT N
                "date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
 cursor.execute("CREATE TABLE IF NOT EXISTS api(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, api_name TEXT,"
                "api_desc TEXT, owner TEXT)")
+cursor.execute("CREATE TABLE IF NOT EXISTS api_permission(token_api TEXT, create_file BOOL, upload_file BOOL, "
+               "delete_file BOOL, create_folder BOOL, delete_folder BOOL, share_file_and_folder BOOL, "
+               "delete_share_file_and_folder BOOL, create_user BOOL, delete_user BOOL)")
 con.commit()
 
-fd, filenames, lastPath, rand_name = "", "", "", ""
+fd, filenames, lastPath = "", "", ""
 dir_path = os.path.abspath(os.getcwd()) + '/file_cloud/'
 share_path = os.path.abspath(os.getcwd()) + '/share/'
 app = Flask(__name__)
 app.config['UPLOAD_PATH'] = dir_path
+api_no_token = 'You must send a token in JSON with the name: `api-token`!'
 
 
 @app.route('/')
@@ -81,7 +85,7 @@ def home():  # put application's code here
 
 @app.route('/my/file/')
 def file():
-    global filenames, lastPath, fd, rand_name
+    global filenames, lastPath, fd
     actual_path, lastPath, rand_name = '/', '/', ''
     args = request.args
     work_file_in_dir, work_dir = [], []
@@ -436,14 +440,57 @@ def admin_add_api():
             user_name = cursor.fetchall()
             return render_template('admin/add_api.html', user_name=user_name)
         elif request.method == 'POST':
+            if request.form.get('api_create_file'):
+                api_create_file = 1
+            else:
+                api_create_file = 0
+            if request.form.get('api_upload_file'):
+                api_upload_file = 1
+            else:
+                api_upload_file = 0
+            if request.form.get('api_delete_file'):
+                api_delete_file = 1
+            else:
+                api_delete_file = 0
+            if request.form.get('api_create_folder'):
+                api_create_folder = 1
+            else:
+                api_create_folder = 0
+            if request.form.get('api_delete_folder'):
+                api_delete_folder = 1
+            else:
+                api_delete_folder = 0
+            if request.form.get('api_share_file_folder'):
+                api_share_file_folder = 1
+            else:
+                api_share_file_folder = 0
+            if request.form.get('api_delete_share_file_folder'):
+                api_delete_share_file_folder = 1
+            else:
+                api_delete_share_file_folder = 0
+            if request.form.get('api_create_user'):
+                api_create_user = 1
+            else:
+                api_create_user = 0
+            if request.form.get('api_delete_user'):
+                api_delete_user = 1
+            else:
+                api_delete_user = 0
             new_uuid = str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())))
             cursor.execute('''INSERT INTO api(token, api_name, api_desc, owner) VALUES (?, ?, ?, ?)''',
                            (new_uuid, request.form.get('api-name'), request.form.get('api-desc'),
                             request.cookies.get('userID')))
+            cursor.execute('''INSERT INTO api_permission(token_api, create_file, upload_file, delete_file, 
+            create_folder, delete_folder, share_file_and_folder, delete_share_file_and_folder, create_user, 
+            delete_user) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (new_uuid, api_create_file, api_upload_file,
+                                                                    api_delete_file, api_create_folder,
+                                                                    api_delete_folder, api_share_file_folder,
+                                                                    api_delete_share_file_folder, api_create_user,
+                                                                    api_delete_user))
             con.commit()
             make_log('add_api', request.remote_addr, request.cookies.get('userID'), 2,
                      'Created API token: ' + new_uuid)
-            return redirect(url_for('home'))
+            return redirect(url_for('admin_api_manager'))
     else:
         make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2)
         return redirect(url_for('home'))
@@ -453,15 +500,28 @@ def admin_add_api():
 def test_connection():
     content = request.json
     cursor.execute('''SELECT * FROM api where token=?''', (content['api-token'],))
-    row = cursor.fetchone()
+    row1 = cursor.fetchone()
+    cursor.execute('''SELECT * FROM api_permission where token_api=?''', (content['api-token'],))
+    row2 = cursor.fetchone()
 
     return jsonify({
         "status-code": "200",
-        "api-id": row[0],
+        "api-id": row1[0],
         "api-token": content['api-token'],
-        "api-name": row[2],
-        "api-desc": row[3],
-        "owner":row[4]
+        "api-name": row1[2],
+        "api-desc": row1[3],
+        "owner": row1[4],
+        "permission": {
+            "create_file": row2[1],
+            "upload_file": row2[2],
+            "delete_file": row2[3],
+            "create_folder": row2[4],
+            "delete_folder": row2[5],
+            "share_file_and_folder": row2[6],
+            "delete_share_file_and_folder": row2[7],
+            "create_user": row2[8],
+            "delete_user": row2[9],
+        }
     })
 
 
