@@ -501,8 +501,6 @@ def test_connection():
     content = request.json
     cursor.execute('''SELECT * FROM api where token=?''', (content['api-token'],))
     row1 = cursor.fetchone()
-    cursor.execute('''SELECT * FROM api_permission where token_api=?''', (content['api-token'],))
-    row2 = cursor.fetchone()
 
     return jsonify({
         "status-code": "200",
@@ -511,6 +509,21 @@ def test_connection():
         "api-name": row1[2],
         "api-desc": row1[3],
         "owner": row1[4],
+    })
+
+
+@app.route('/api/v1/show_permission', methods=['POST'])
+def show_permission():
+    content = request.json
+    cursor.execute('''SELECT * FROM api where token=?''', (content['api-token'],))
+    row1 = cursor.fetchone()
+    cursor.execute('''SELECT * FROM api_permission where token_api=?''', (content['api-token'],))
+    row2 = cursor.fetchone()
+
+    return jsonify({
+        "status-code": "200",
+        "api-token": content['api-token'],
+        "api-name": row1[2],
         "permission": {
             "create_file": row2[1],
             "upload_file": row2[2],
