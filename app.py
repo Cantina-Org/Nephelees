@@ -452,9 +452,16 @@ def admin_add_api():
 @app.route('/api/v1/test_connection', methods=['POST'])
 def test_connection():
     content = request.json
+    cursor.execute('''SELECT * FROM api where token=?''', (content['api-token'],))
+    row = cursor.fetchone()
+
     return jsonify({
         "status-code": "200",
-        "api-token": content['api-token']
+        "api-id": row[0],
+        "api-token": content['api-token'],
+        "api-name": row[2],
+        "api-desc": row[3],
+        "owner":row[4]
     })
 
 
