@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <title>Cantina - Admin API Manager</title>
+</head>
+<body>
+    <form action="{{ url_for('admin_add_api') }}" method="post">
+        <label>API Name: </label>
+        <label><input type="text" placeholder="Enter API Name" name="api-name" required></label><br>
+        <label>API Description: </label>
+        <label><input type="text" placeholder="Enter a description for the API" name="api-desc" required></label><br>
+        <button type="submit">Submit User</button>
+    </form>
+</body>
+</html>
