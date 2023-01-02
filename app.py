@@ -501,7 +501,6 @@ def test_connection():
     content = request.json
     cursor.execute('''SELECT * FROM api where token=?''', (content['api-token'],))
     row1 = cursor.fetchone()
-
     return jsonify({
         "status-code": "200",
         "api-id": row1[0],
@@ -536,6 +535,42 @@ def show_permission():
             "delete_user": row2[9],
         }
     })
+
+
+@app.route('/api/v1/add_user', methods=['POST'])
+def add_user_api():
+    content = request.json
+    cursor.execute('''SELECT * FROM api where token=?''', (content['api-token'],))
+    row1 = cursor.fetchone()
+    cursor.execute('''SELECT * FROM api_permission where token_api=?''', (content['api-token'],))
+    row2 = cursor.fetchone()
+    if row2[8]:
+        try:
+            new_uuid = str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())))
+            cursor.execute('''INSERT INTO user(token, user_name, password, admin, work_Dir, online, last_online) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?)''', (new_uuid, content['username'], content['email'],
+                                                              content['password'], content['admin'],))
+            return jsonify({
+                "status-code": "200",
+                "api-token": content['api-token'],
+                "user-to-create": content['username'],
+                "user-email-to-create": content['email'],
+                "user-passsword-to-create": content['password'],
+                "user-permission-to-create": content['admin']
+            })
+        except KeyError as e:
+            return 'L\'argument {} est manquant!'.format(str(e))
+    else:
+        if row1:
+            return jsonify({
+                "status-code": "401",
+                "details": "You don't have the permission to use that"
+            })
+        else:
+            return jsonify({
+                "status-code": "401",
+                "details": "You must be login to use that"
+            })
 
 
 if __name__ == '__main__':
