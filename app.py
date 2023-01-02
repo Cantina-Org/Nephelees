@@ -181,17 +181,22 @@ def file():
                                path="/my/file/?path=" + actual_path)
 
     elif args.get('action') == "shareFolder" and args.get('workFolder') and args.get('loginToShow'):
+        print(1)
         if row[1]:
+            print(2.1)
             make_tarfile(share_path + row[2] + '/' + args.get('workFolder') + '.tar.gz',
                          dir_path + actual_path + args.get('workFolder'))
         elif not row[1]:
+            print(2.2)
             make_tarfile(share_path + row[2] + '/' + args.get('workFolder') + '.tar.gz',
                          row[0] + '/' + actual_path + args.get('workFolder'))
+        print(3)
         cursor.execute('''INSERT INTO file_sharing(file_name, file_owner, file_short_name, login_to_show, password) 
-                                    VALUES (?, ?, ?, ?, ?)''', (args.get('workFolder'), row[2],
+                                    VALUES (?, ?, ?, ?, ?)''', (args.get('workFolder')+'.tar.gz', row[2],
                                                                 rand_name, args.get('loginToShow'),
                                                                 hash_perso(args.get('password'))))
         con.commit()
+        print(4)
         return render_template("redirect/r-myfile-clipboardcopy.html", short_name=rand_name,
                                path="/my/file/?path=" + actual_path)
 
@@ -434,7 +439,7 @@ def admin_api_manager(api_id=None):
 @app.route('/admin/add_api/', methods=['POST', 'GET'])
 def admin_add_api():
     api_create_file, api_upload_file, api_delete_file, api_create_folder, api_delete_folder, api_share_file_folder, \
-        api_delete_share_file_folder, api_delete_user = 0, 0, 0, 0, 0, 0, 0, 0
+        api_delete_share_file_folder, api_delete_user, api_create_user = 0, 0, 0, 0, 0, 0, 0, 0, 0
     admin_and_login = user_login()
     if admin_and_login[0] and admin_and_login[1]:
         if request.method == 'GET':
