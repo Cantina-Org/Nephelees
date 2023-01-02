@@ -433,6 +433,8 @@ def admin_api_manager(api_id=None):
 
 @app.route('/admin/add_api/', methods=['POST', 'GET'])
 def admin_add_api():
+    api_create_file, api_upload_file, api_delete_file, api_create_folder, api_delete_folder, api_share_file_folder, \
+        api_delete_share_file_folder, api_delete_user = 0, 0, 0, 0, 0, 0, 0, 0
     admin_and_login = user_login()
     if admin_and_login[0] and admin_and_login[1]:
         if request.method == 'GET':
@@ -442,40 +444,23 @@ def admin_add_api():
         elif request.method == 'POST':
             if request.form.get('api_create_file'):
                 api_create_file = 1
-            else:
-                api_create_file = 0
             if request.form.get('api_upload_file'):
                 api_upload_file = 1
-            else:
-                api_upload_file = 0
             if request.form.get('api_delete_file'):
                 api_delete_file = 1
-            else:
-                api_delete_file = 0
             if request.form.get('api_create_folder'):
                 api_create_folder = 1
-            else:
-                api_create_folder = 0
             if request.form.get('api_delete_folder'):
                 api_delete_folder = 1
-            else:
-                api_delete_folder = 0
             if request.form.get('api_share_file_folder'):
                 api_share_file_folder = 1
-            else:
-                api_share_file_folder = 0
             if request.form.get('api_delete_share_file_folder'):
                 api_delete_share_file_folder = 1
-            else:
-                api_delete_share_file_folder = 0
             if request.form.get('api_create_user'):
                 api_create_user = 1
-            else:
-                api_create_user = 0
             if request.form.get('api_delete_user'):
                 api_delete_user = 1
-            else:
-                api_delete_user = 0
+
             new_uuid = str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())))
             cursor.execute('''INSERT INTO api(token, api_name, api_desc, owner) VALUES (?, ?, ?, ?)''',
                            (new_uuid, request.form.get('api-name'), request.form.get('api-desc'),
