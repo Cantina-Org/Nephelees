@@ -486,11 +486,27 @@ def admin_add_api():
         return redirect(url_for('home'))
 
 
+########################################################################################################################
+#                                         ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄                                        #
+#                                        ▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌                                       #
+#                                        ▐░█▀▀▀▀▀▀▀█░▌▐░█▀▀▀▀▀▀▀█░▌ ▀▀▀▀█░█▀▀▀▀                                        #
+#                                        ▐░▌       ▐░▌▐░▌       ▐░▌     ▐░▌                                            #
+#                                        ▐░█▄▄▄▄▄▄▄█░▌▐░█▄▄▄▄▄▄▄█░▌     ▐░▌                                            #
+#                                        ▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌     ▐░▌                                            #
+#                                        ▐░█▀▀▀▀▀▀▀█░▌▐░█▀▀▀▀▀▀▀▀▀      ▐░▌                                            #
+#                                        ▐░▌       ▐░▌▐░▌               ▐░▌                                            #
+#                                        ▐░▌       ▐░▌▐░▌           ▄▄▄▄█░█▄▄▄▄                                        #
+#                                        ▐░▌       ▐░▌▐░▌          ▐░░░░░░░░░░░▌                                       #
+#                                         ▀         ▀  ▀            ▀▀▀▀▀▀▀▀▀▀▀                                        #
+########################################################################################################################
+
+
 @app.route('/api/v1/test_connection', methods=['POST'])
 def test_connection():
     content = request.json
     cursor.execute('''SELECT * FROM api where token=?''', (content['api-token'],))
     row1 = cursor.fetchone()
+    make_log('test_connection', request.remote_addr, content['api-token'], 4)
     return jsonify({
         "status-code": "200",
         "api-id": row1[0],
@@ -508,6 +524,7 @@ def show_permission():
     row1 = cursor.fetchone()
     cursor.execute('''SELECT * FROM api_permission where token_api=?''', (content['api-token'],))
     row2 = cursor.fetchone()
+    make_log('show_permission', request.remote_addr, content['api-token'], 4)
 
     return jsonify({
         "status-code": "200",
@@ -540,6 +557,8 @@ def add_user_api():
             cursor.execute('''INSERT INTO user(token, user_name, password, admin, work_Dir, online, last_online) 
                             VALUES (?, ?, ?, ?, ?, ?, ?)''', (new_uuid, content['username'], content['email'],
                                                               content['password'], content['admin'],))
+            make_log('add_user_api', request.remote_addr, request.cookies.get('userID'), 2,
+                     'Created User token: ' + new_uuid)
             return jsonify({
                 "status-code": "200",
                 "api-token": content['api-token'],
@@ -552,11 +571,15 @@ def add_user_api():
             return 'L\'argument {} est manquant!'.format(str(e))
     else:
         if row1:
+            make_log('add_api_error', request.remote_addr, content['api-token'], 2,
+                     'Not enough permission')
             return jsonify({
                 "status-code": "401",
                 "details": "You don't have the permission to use that"
             })
         else:
+            make_log('add_api_error', request.remote_addr, content['api-token'], 2,
+                     'Not logged in')
             return jsonify({
                 "status-code": "401",
                 "details": "You must be login to use that"
