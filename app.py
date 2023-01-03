@@ -557,7 +557,7 @@ def add_user_api():
             cursor.execute('''INSERT INTO user(token, user_name, password, admin, work_Dir, online, last_online) 
                             VALUES (?, ?, ?, ?, ?, ?, ?)''', (new_uuid, content['username'], content['email'],
                                                               content['password'], content['admin'],))
-            make_log('add_user_api', request.remote_addr, request.cookies.get('userID'), 2,
+            make_log('add_user_api', request.remote_addr, request.cookies.get('userID'), 4,
                      'Created User token: ' + new_uuid)
             return jsonify({
                 "status-code": "200",
@@ -571,14 +571,14 @@ def add_user_api():
             return 'L\'argument {} est manquant!'.format(str(e))
     else:
         if row1:
-            make_log('add_api_error', request.remote_addr, content['api-token'], 2,
+            make_log('add_api_error', request.remote_addr, content['api-token'], 4,
                      'Not enough permission')
             return jsonify({
                 "status-code": "401",
                 "details": "You don't have the permission to use that"
             })
         else:
-            make_log('add_api_error', request.remote_addr, content['api-token'], 2,
+            make_log('add_api_error', request.remote_addr, content['api-token'], 4,
                      'Not logged in')
             return jsonify({
                 "status-code": "401",
