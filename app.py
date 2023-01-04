@@ -42,9 +42,13 @@ def user_login():
         return 'UserNotFound'
 
 
-def make_log(action_name, user_ip, user_token, log_level, argument=None):
-    cursor.execute('''INSERT INTO log(name, user_ip, user_token, argument, log_level) VALUES (?,?, ?,?,?)''',
-                   (str(action_name), str(user_ip), str(user_token), argument, log_level))
+def make_log(action_name, user_ip, user_token, log_level, argument=None, content=None):
+    if content:
+        cursor.execute('''INSERT INTO log(name, user_ip, user_token, argument, log_level) VALUES (?,?, ?,?,?)''',
+                       (str(action_name), str(user_ip), str(content), argument, log_level))
+    else:
+        cursor.execute('''INSERT INTO log(name, user_ip, user_token, argument, log_level) VALUES (?,?, ?,?,?)''',
+                       (str(action_name), str(user_ip), str(user_token), argument, log_level))
     con.commit()
 
 
@@ -181,22 +185,17 @@ def file():
                                path="/my/file/?path=" + actual_path)
 
     elif args.get('action') == "shareFolder" and args.get('workFolder') and args.get('loginToShow'):
-        print(1)
         if row[1]:
-            print(2.1)
             make_tarfile(share_path + row[2] + '/' + args.get('workFolder') + '.tar.gz',
                          dir_path + actual_path + args.get('workFolder'))
         elif not row[1]:
-            print(2.2)
             make_tarfile(share_path + row[2] + '/' + args.get('workFolder') + '.tar.gz',
                          row[0] + '/' + actual_path + args.get('workFolder'))
-        print(3)
         cursor.execute('''INSERT INTO file_sharing(file_name, file_owner, file_short_name, login_to_show, password) 
-                                    VALUES (?, ?, ?, ?, ?)''', (args.get('workFolder')+'.tar.gz', row[2],
+                                    VALUES (?, ?, ?, ?, ?)''', (args.get('workFolder') + '.tar.gz', row[2],
                                                                 rand_name, args.get('loginToShow'),
                                                                 hash_perso(args.get('password'))))
         con.commit()
-        print(4)
         return render_template("redirect/r-myfile-clipboardcopy.html", short_name=rand_name,
                                path="/my/file/?path=" + actual_path)
 
@@ -213,7 +212,6 @@ def login():
         cursor.execute(f'''SELECT user_name, password, token FROM user WHERE password = ? AND user_name = ?''',
                        (hash_perso(passwd), user))
         row = cursor.fetchone()
-
         try:
             if len(row) >= 1:
                 make_log('login', request.remote_addr, row[2], 1)
@@ -506,7 +504,7 @@ def test_connection():
     content = request.json
     cursor.execute('''SELECT * FROM api where token=?''', (content['api-token'],))
     row1 = cursor.fetchone()
-    make_log('test_connection', request.remote_addr, content['api-token'], 4)
+    make_log('test_connection', request.remote_addr, content['api-token'], 4, content['api-token'])
     return jsonify({
         "status-code": "200",
         "api-id": row1[0],
@@ -524,7 +522,7 @@ def show_permission():
     row1 = cursor.fetchone()
     cursor.execute('''SELECT * FROM api_permission where token_api=?''', (content['api-token'],))
     row2 = cursor.fetchone()
-    make_log('show_permission', request.remote_addr, content['api-token'], 4)
+    make_log('show_permission', request.remote_addr, content['api-token'], 4, content['api-token'])
 
     return jsonify({
         "status-code": "200",
@@ -546,6 +544,7 @@ def show_permission():
 
 @app.route('/api/v1/add_user', methods=['POST'])
 def add_user_api():
+    admin = False
     content = request.json
     cursor.execute('''SELECT * FROM api where token=?''', (content['api-token'],))
     row1 = cursor.fetchone()
@@ -554,32 +553,36 @@ def add_user_api():
     if row2[8]:
         try:
             new_uuid = str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())))
-            cursor.execute('''INSERT INTO user(token, user_name, password, admin, work_Dir, online, last_online) 
-                            VALUES (?, ?, ?, ?, ?, ?, ?)''', (new_uuid, content['username'], content['email'],
-                                                              content['password'], content['admin'],))
-            make_log('add_user_api', request.remote_addr, request.cookies.get('userID'), 2,
-                     'Created User token: ' + new_uuid)
+            if content['admin'] == 1:
+                admin = True
+
+            cursor.execute('''INSERT INTO user(token, user_name, password, admin, work_Dir) 
+                            VALUES (?, ?, ?, ?, ?)''', (new_uuid, content['username'], hash_perso(content['password']),
+                                                        admin, dir_path + '/' + secure_filename(content['username'])))
+            con.commit()
+            make_log('add_user_api', request.remote_addr, request.cookies.get('userID'), 4,
+                     'Created User token: ' + new_uuid, content['api-token'])
             return jsonify({
                 "status-code": "200",
                 "api-token": content['api-token'],
                 "user-to-create": content['username'],
-                "user-email-to-create": content['email'],
                 "user-passsword-to-create": content['password'],
-                "user-permission-to-create": content['admin']
+                "user-permission-to-create": content['admin'],
+                "user-token-create": new_uuid
             })
         except KeyError as e:
             return 'L\'argument {} est manquant!'.format(str(e))
     else:
         if row1:
-            make_log('add_api_error', request.remote_addr, content['api-token'], 2,
-                     'Not enough permission')
+            make_log('add_api_error', request.remote_addr, content['api-token'], 4,
+                     'Not enough permission', content['api-token'])
             return jsonify({
                 "status-code": "401",
                 "details": "You don't have the permission to use that"
             })
         else:
-            make_log('add_api_error', request.remote_addr, content['api-token'], 2,
-                     'Not logged in')
+            make_log('add_api_error', request.remote_addr, content['api-token'], 4,
+                     'Not logged in', content['username'])
             return jsonify({
                 "status-code": "401",
                 "details": "You must be login to use that"
