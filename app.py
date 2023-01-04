@@ -589,6 +589,48 @@ def add_user_api():
             })
 
 
+@app.route('/api/v1/upload_file', methods=['POST'])
+def upload_file_api():
+    content = request.json
+    cursor.execute('''SELECT * FROM api where token=?''', (content['api-token'],))
+    row1 = cursor.fetchone()
+    cursor.execute('''SELECT * FROM api_permission where token_api=?''', (content['api-token'],))
+    row2 = cursor.fetchone()
+    if row2[3]:
+        try:
+            if 'file' not in request.files:
+                return jsonify({
+                    "status-code": "422",
+                    "Missing Argument": "file is missing"
+                })
+
+            file = request.files['file']
+            print(file)
+            return jsonify({
+                "status-code": "200",
+                "api-token": content['api-token'],
+                "file-to-upload": content['file-name'],
+                "path-to-upload": content['file-path']
+            })
+        except KeyError as e:
+            return 'L\'argument {} est manquant!'.format(str(e))
+    else:
+        if row1:
+            make_log('upload_file_api_error', request.remote_addr, content['api-token'], 4,
+                     'Not enough permission', content['api-token'])
+            return jsonify({
+                "status-code": "401",
+                "details": "You don't have the permission to use that"
+            })
+        else:
+            make_log('upload_file_api_error', request.remote_addr, content['api-token'], 4,
+                     'Not logged in', content['username'])
+            return jsonify({
+                "status-code": "401",
+                "details": "You must be login to use that"
+            })
+
+
 if __name__ == '__main__':
     app.add_url_rule('/favicon.ico', redirect_to=url_for('static', filename='static/favicon.ico'))
     app.run()
