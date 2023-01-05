@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <style>
+        a#gras {
+            text-decoration: underline;
+            font-weight: bold;
+        }
+    </style>
+    <title>Cantina - Admin API Manager</title>
+</head>
+<body>
+    <a id="gras">ID:</a> {{ api[0] }}<br>
+    <a id="gras">Token:</a> {{ api[1] }}<br>
+    <a id="gras">Name:</a> {{ api[2] }}<br>
+    <a id="gras">Description:</a> {{ api[3]}}<br>
+    <a id="gras">Owner:</a> {{ api[4]}}<br>
+    <a id="gras">Admin:</a> {{ api[5]}}
+</body>
+</html>
