@@ -57,7 +57,7 @@ def make_tarfile(output_filename, source_dir):
         tar.add(source_dir, arcname=os.path.basename(source_dir))
 
 
-con = mariadb.connect(user="cantina", password="LeMdPDeTest", host="localhost", port=3306, database="cantina_db")
+con = mariadb.connect(user="mathieu", password="LeMdPDeTest", host="localhost", port=3306, database="cantina_db")
 cursor = con.cursor()
 cursor.execute("CREATE TABLE IF NOT EXISTS user(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
                "user_name TEXT, password TEXT, admin BOOL, work_Dir TEXT, online BOOL, last_online TEXT)")
@@ -499,7 +499,7 @@ def admin_add_api():
 ########################################################################################################################
 
 
-@app.route('/api/v1/test_connection', methods=['POST'])
+@app.route('/api/v1/test_connection', methods=['GET'])
 def test_connection():
     content = request.json
     cursor.execute('''SELECT * FROM api where token=?''', (content['api-token'],))
@@ -515,7 +515,7 @@ def test_connection():
     })
 
 
-@app.route('/api/v1/show_permission', methods=['POST'])
+@app.route('/api/v1/show_permission', methods=['GET'])
 def show_permission():
     content = request.json
     cursor.execute('''SELECT * FROM api where token=?''', (content['api-token'],))
@@ -589,48 +589,5 @@ def add_user_api():
             })
 
 
-@app.route('/api/v1/upload_file', methods=['POST'])
-def upload_file_api():
-    content = request.json
-    cursor.execute('''SELECT * FROM api where token=?''', (content['api-token'],))
-    row1 = cursor.fetchone()
-    cursor.execute('''SELECT * FROM api_permission where token_api=?''', (content['api-token'],))
-    row2 = cursor.fetchone()
-    if row2[3]:
-        try:
-            if 'file' not in request.files:
-                return jsonify({
-                    "status-code": "422",
-                    "Missing Argument": "file is missing"
-                })
-
-            file = request.files['file']
-            print(file)
-            return jsonify({
-                "status-code": "200",
-                "api-token": content['api-token'],
-                "file-to-upload": content['file-name'],
-                "path-to-upload": content['file-path']
-            })
-        except KeyError as e:
-            return 'L\'argument {} est manquant!'.format(str(e))
-    else:
-        if row1:
-            make_log('upload_file_api_error', request.remote_addr, content['api-token'], 4,
-                     'Not enough permission', content['api-token'])
-            return jsonify({
-                "status-code": "401",
-                "details": "You don't have the permission to use that"
-            })
-        else:
-            make_log('upload_file_api_error', request.remote_addr, content['api-token'], 4,
-                     'Not logged in', content['username'])
-            return jsonify({
-                "status-code": "401",
-                "details": "You must be login to use that"
-            })
-
-
 if __name__ == '__main__':
-    app.add_url_rule('/favicon.ico', redirect_to=url_for('static', filename='static/favicon.ico'))
     app.run()
