@@ -10,6 +10,7 @@ import shutil
 import random
 import string
 import tarfile
+import json
 
 
 def hash_perso(passwordtohash):
@@ -57,7 +58,12 @@ def make_tarfile(output_filename, source_dir):
         tar.add(source_dir, arcname=os.path.basename(source_dir))
 
 
-con = mariadb.connect(user="mathieu", password="LeMdPDeTest", host="localhost", port=3306, database="cantina_db")
+# ouvrons le fichier json config.json
+with open('/home/mathieu/Bureau/cantina-matbe-fork/config.json', 'r') as json_file:
+    config_data = json.load(json_file)
+
+con = mariadb.connect(user=config_data['database_username'], password=config_data['database_password'],
+                      host="localhost", port=3306, database=config_data['database_name'])
 cursor = con.cursor()
 cursor.execute("CREATE TABLE IF NOT EXISTS user(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
                "user_name TEXT, password TEXT, admin BOOL, work_Dir TEXT, online BOOL, last_online TEXT)")
@@ -407,7 +413,7 @@ def admin_show_share_file():
         all_share_file = cursor.fetchall()
 
         return render_template('admin/show_share_file.html', user_name=user_name,
-                               all_share_file=all_share_file)
+                               all_share_file=all_share_file), 401
 
     else:
         make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2)

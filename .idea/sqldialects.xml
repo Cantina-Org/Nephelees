@@ -2,5 +2,6 @@
 <project version="4">
   <component name="SqlDialectMappings">
     <file url="file://$PROJECT_DIR$/app.py" dialect="MariaDB" />
+    <file url="file://$PROJECT_DIR$/install.py" dialect="MariaDB" />
   </component>
 </project>
