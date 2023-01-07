@@ -28,8 +28,8 @@ if os.geteuid() != 0:
     exit("L'installation doit être fait en root!")
 
 print("Bienvenue dans l'installation de Cantina Cloud!")
-os.system("adduser cantina --system")
-os.system("git clone https://github.com/Cantina-Org/cantina.git /home/cantina/")
+os.system("sudo adduser cantina --system")
+os.system("git clone https://github.com/Cantina-Org/cantina.git /home/cantina/cantina-cloud")
 os.system("mkdir /home/cantina/file_cloud /home/cantina/share")
 os.system("pip install Flask")
 
