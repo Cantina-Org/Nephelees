@@ -67,7 +67,7 @@ cursor.execute("CREATE TABLE IF NOT EXISTS api_permission(token_api TEXT, create
                "delete_file BOOL, create_folder BOOL, delete_folder BOOL, share_file_and_folder BOOL, "
                "delete_share_file_and_folder BOOL, create_user BOOL, delete_user BOOL)")
 cursor.execute(f'''INSERT INTO user(token, user_name, password, admin, work_Dir) VALUES (?, ?, ?, ?, ?)''', (
-    uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())), username, mdp, 1, './cantina/'+username))
+    str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1()))), username, mdp, 1, './cantina/'+username))
 con.commit()
 os.system("mkdir ./cantina/file_cloud/matbe ./cantina/share/matbe")
 
@@ -84,7 +84,6 @@ Description=Cantina Cloud
 User=cantina
 WorkingDirectory={os.path.abspath(os.getcwd())}
 ExecStart=python3 app.py
-Restart=always
 [Install]
 WantedBy=multi-user.target' >> /etc/systemd/system/cantina.service""")
 if launch_startup == "yes" or launch_startup == "oui" or launch_startup == "y" or launch_startup == "o":
