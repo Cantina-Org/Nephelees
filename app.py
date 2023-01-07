@@ -58,9 +58,14 @@ def make_tarfile(output_filename, source_dir):
         tar.add(source_dir, arcname=os.path.basename(source_dir))
 
 
-# ouvrons le fichier json config.json
-with open('/home/mathieu/Bureau/cantina-matbe-fork/config.json', 'r') as json_file:
-    config_data = json.load(json_file)
+fd, filenames, lastPath = "", "", ""
+dir_path = os.path.abspath(os.getcwd()) + '/file_cloud/'
+share_path = os.path.abspath(os.getcwd()) + '/share/'
+app = Flask(__name__)
+app.config['UPLOAD_PATH'] = dir_path
+api_no_token = 'You must send a token in JSON with the name: `api-token`!'
+conf_file = os.open(os.path.abspath(os.getcwd())+"/config.json", os.O_RDONLY)
+config_data = json.loads(read(conf_file, 150))
 
 con = mariadb.connect(user=config_data['database_username'], password=config_data['database_password'],
                       host="localhost", port=3306, database=config_data['database_name'])
@@ -78,13 +83,6 @@ cursor.execute("CREATE TABLE IF NOT EXISTS api_permission(token_api TEXT, create
                "delete_file BOOL, create_folder BOOL, delete_folder BOOL, share_file_and_folder BOOL, "
                "delete_share_file_and_folder BOOL, create_user BOOL, delete_user BOOL)")
 con.commit()
-
-fd, filenames, lastPath = "", "", ""
-dir_path = os.path.abspath(os.getcwd()) + '/file_cloud/'
-share_path = os.path.abspath(os.getcwd()) + '/share/'
-app = Flask(__name__)
-app.config['UPLOAD_PATH'] = dir_path
-api_no_token = 'You must send a token in JSON with the name: `api-token`!'
 
 
 @app.route('/')
