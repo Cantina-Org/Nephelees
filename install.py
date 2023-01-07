@@ -1,8 +1,8 @@
+import json
 import os
 import hashlib
 import uuid
 import mariadb
-import json
 
 mdp = ""
 mdp2 = ""
@@ -44,7 +44,11 @@ while not conf1:
     db_uname = input("  Nom d'utilisateur de la base de donnée: ")
     confirm = input("Confirmez vous les données ci-dessus? ")
     if confirm == "yes" or confirm == "oui" or confirm == "y" or confirm == "o":
-        conf1 = True
+        if not username or not mdp or not db_uname or not db_name or not db_passw:
+            conf1 = False
+        else:
+            conf1 = True
+
 print("---------------------------------------------------------------------------------------------------------------")
 
 
@@ -67,6 +71,11 @@ cursor.execute(f'''INSERT INTO user(token, user_name, password, admin, work_Dir)
 con.commit()
 os.system("mkdir ./cantina/file_cloud/matbe ./cantina/share/matbe")
 
+json_data = {"database_username": db_uname, "database_password": db_passw, "database_name": db_name}
+with open("./cantina/config.json", "w") as outfile:
+    outfile.write(json.dumps(json_data, indent=4))
+
+
 launch_startup = input("Voullez vous lancez Cantina Cloud au lancement de votre serveur?")
 os.system("touch /etc/systemd/system/cloud.service")
 os.system(f"""echo '[Unit]
@@ -82,7 +91,6 @@ if launch_startup == "yes" or launch_startup == "oui" or launch_startup == "y" o
     os.system("systemctl enable cantina")
 
 os.system("systemctl start cantina")
-
 
 print("---------------------------------------------------------------------------------------------------------------")
 os.system("rm ./cantina/installer.py")
