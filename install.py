@@ -28,8 +28,9 @@ if os.geteuid() != 0:
     exit("L'installation doit être fait en root!")
 
 print("Bienvenue dans l'installation de Cantina Cloud!")
-os.system("git clone https://github.com/Cantina-Org/cantina.git")
-os.system("mkdir ./cantina/file_cloud ./cantina/share")
+os.system("adduser cantina --system")
+os.system("git clone https://github.com/Cantina-Org/cantina.git /home/cantina/")
+os.system("mkdir /home/cantina/file_cloud /home/cantina/share")
 os.system("pip install Flask")
 
 print("---------------------------------------------------------------------------------------------------------------")
@@ -69,7 +70,7 @@ cursor.execute("CREATE TABLE IF NOT EXISTS api_permission(token_api TEXT, create
 cursor.execute(f'''INSERT INTO user(token, user_name, password, admin, work_Dir) VALUES (?, ?, ?, ?, ?)''', (
     str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1()))), username, mdp, 1, './cantina/'+username))
 con.commit()
-os.system("mkdir ./cantina/file_cloud/matbe ./cantina/share/matbe")
+os.system("mkdir /home/cantina/file_cloud/matbe /home/cantina/share/matbe")
 
 json_data = {"database_username": db_uname, "database_password": db_passw, "database_name": db_name}
 with open("./cantina/config.json", "w") as outfile:
@@ -86,12 +87,13 @@ WorkingDirectory={os.path.abspath(os.getcwd())}
 ExecStart=python3 app.py
 [Install]
 WantedBy=multi-user.target' >> /etc/systemd/system/cantina.service""")
+os.system('chown cantina /home/cantina/*/* && chgrp cantina /home/cantina/*/*')
 if launch_startup == "yes" or launch_startup == "oui" or launch_startup == "y" or launch_startup == "o":
     os.system("systemctl enable cantina")
 
 os.system("systemctl start cantina")
 
 print("---------------------------------------------------------------------------------------------------------------")
-os.system("rm ./cantina/installer.py")
+os.system("rm /home/cantina/installer.py")
 print("Nous venons de finir l'instalation de Cantina! Vous pouvez maintenant sur https://127.0.0.1:5000/  pour pouvoir "
       "continuer l'installation de Cantina")
