@@ -68,7 +68,7 @@ cursor.execute("CREATE TABLE IF NOT EXISTS api_permission(token_api TEXT, create
                "delete_file BOOL, create_folder BOOL, delete_folder BOOL, share_file_and_folder BOOL, "
                "delete_share_file_and_folder BOOL, create_user BOOL, delete_user BOOL)")
 cursor.execute(f'''INSERT INTO user(token, user_name, password, admin, work_Dir) VALUES (?, ?, ?, ?, ?)''', (
-    str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1()))), username, mdp, 1, '/home/cantina/cloud/file_cloud/'+username))
+    str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1()))), username, hash_perso(mdp), 1, '/home/cantina/cloud/file_cloud/'+username))
 con.commit()
 os.system("mkdir /home/cantina/cloud/file_cloud/matbe /home/cantina/cloud/share/matbe")
 
