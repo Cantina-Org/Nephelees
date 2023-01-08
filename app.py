@@ -10,6 +10,7 @@ import shutil
 import random
 import string
 import tarfile
+import json
 
 
 def hash_perso(passwordtohash):
@@ -57,7 +58,17 @@ def make_tarfile(output_filename, source_dir):
         tar.add(source_dir, arcname=os.path.basename(source_dir))
 
 
-con = mariadb.connect(user="mathieu", password="LeMdPDeTest", host="localhost", port=3306, database="cantina_db")
+fd, filenames, lastPath = "", "", ""
+dir_path = os.path.abspath(os.getcwd()) + '/file_cloud/'
+share_path = os.path.abspath(os.getcwd()) + '/share/'
+app = Flask(__name__)
+app.config['UPLOAD_PATH'] = dir_path
+api_no_token = 'You must send a token in JSON with the name: `api-token`!'
+conf_file = os.open(os.path.abspath(os.getcwd())+"/config.json", os.O_RDONLY)
+config_data = json.loads(read(conf_file, 150))
+
+con = mariadb.connect(user=config_data['database_username'], password=config_data['database_password'],
+                      host="localhost", port=3306, database=config_data['database_name'])
 cursor = con.cursor()
 cursor.execute("CREATE TABLE IF NOT EXISTS user(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
                "user_name TEXT, password TEXT, admin BOOL, work_Dir TEXT, online BOOL, last_online TEXT)")
@@ -72,13 +83,6 @@ cursor.execute("CREATE TABLE IF NOT EXISTS api_permission(token_api TEXT, create
                "delete_file BOOL, create_folder BOOL, delete_folder BOOL, share_file_and_folder BOOL, "
                "delete_share_file_and_folder BOOL, create_user BOOL, delete_user BOOL)")
 con.commit()
-
-fd, filenames, lastPath = "", "", ""
-dir_path = os.path.abspath(os.getcwd()) + '/file_cloud/'
-share_path = os.path.abspath(os.getcwd()) + '/share/'
-app = Flask(__name__)
-app.config['UPLOAD_PATH'] = dir_path
-api_no_token = 'You must send a token in JSON with the name: `api-token`!'
 
 
 @app.route('/')
@@ -407,7 +411,7 @@ def admin_show_share_file():
         all_share_file = cursor.fetchall()
 
         return render_template('admin/show_share_file.html', user_name=user_name,
-                               all_share_file=all_share_file)
+                               all_share_file=all_share_file), 401
 
     else:
         make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2)
