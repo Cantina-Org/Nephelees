@@ -108,6 +108,7 @@ def file():
     row = cursor.fetchone()
 
     if not args.getlist('path'):
+
         if row[1]:
             for (dirpath, dirnames, filenames) in walk(dir_path):
                 work_file_in_dir.extend(filenames)
@@ -118,6 +119,7 @@ def file():
                 work_file_in_dir.extend(filenames)
                 work_dir.extend(dirnames)
                 break
+
 
     else:
         actual_path_not_corrected = args.get('path').split("/")

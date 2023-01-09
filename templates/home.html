@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html>
 <!--  This source code is exported from pxCode, you can get more document from https://www.pxcode.io  -->
 
 <head>
@@ -8,33 +8,32 @@
 
     <link rel="stylesheet" type="text/css" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous" />
     <link rel="stylesheet" type="text/css" href="https://unpkg.com/aos@2.3.1/dist/aos.css" />
-    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='/css/common.css')}}" />
-    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='/css/fonts.css')}}" />
-    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='/css/Home.css')}}" />
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="css/common.css")}}" />
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="css/fonts.css")}}"/>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="css/Home_admin.css")}}" />
     <script type="text/javascript" src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script type="text/javascript" src="https://unpkg.com/headroom.js@0.12.0/dist/headroom.min.js"></script>
-    <title>Cantina - Home</title>
 
 
 </head>
 
 <body class="flex-column">
-    <div class="home root">
-        <div class="image" style="--src:url({{ url_for('static', filename="/assets/ceec92877822465a603f69474a134cbb.png") }})"></div>
-        <div class="group"></div>
-        <img class="icon" src="{{ url_for('static', filename="/assets/d46f6f507a68e0fec30966ea8498f93f.png") }}" alt="alt text" /><img class="line" src="{{ url_for('static', filename="/assets/87dc98df559011bdf66830edc4186ee9.png") }}" alt="alt text" />
+    <div class="home-admin root">
+        <hr class="line" size="1" />
         <hr class="line1" size="1" />
-        <hr class="line11" size="1" />
-        <hr class="line12" size="1" />
-        <hr class="line13" size="1" />
-        <div class="group1"></div>
-        <hr class="line12" size="1" />
-        <hr class="line1" size="1" />
-        <hr class="line14" size="1" />
-        <h1 class="big_title">CANTINA</h1>
+        <hr class="line2" size="1" />
+        <hr class="line3" size="1" />
+        <hr class="line4" size="1" />
         <h1 class="title">Mes Fichiers:</h1>
-        <div class="rect"></div>
-        <div class="rect1"></div>
+        <h1 class="big_title">CANTINA</h1>
+        <h5 class="highlights">USER<br />NAME</h5>
+        <img class="icon" src="{{ url_for('static', filename="assets/d8e7c8c4d828f5ca760b178fab18e546.png")}}" alt="alt text" /><img class="icon1" src="{{ url_for('static', filename="assets/ecf41deb9430e70057d1c2306ca36f02.png")}}" alt="alt text" />
+        <hr class="line5" size="1" />
+        <hr class="line6" size="1" />
+        <hr class="line7" size="1" />
+        <hr class="line8" size="1" />
+        <hr class="line9" size="1" />
+        <h1 class="title1">Adminsistration:</h1>
     </div>
     <script type="text/javascript">
         AOS.init();
