@@ -87,6 +87,8 @@ con.commit()
 
 @app.route('/')
 def home():  # put application's code here
+    if not request.cookies.get('userID'):
+        return redirect(url_for('login'))
     cursor.execute('''SELECT user_name, admin FROM user WHERE token = ?''', (request.cookies.get('userID'),))
     return render_template('home.html', cur=cursor.fetchall())
 

@@ -1,22 +1,44 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
+<!--  This source code is exported from pxCode, you can get more document from https://www.pxcode.io  -->
+
 <head>
-    <meta charset="UTF-8">
-    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+
+    <link rel="stylesheet" type="text/css" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous" />
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/aos@2.3.1/dist/aos.css" />
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='/css/common.css')}}" />
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='/css/fonts.css')}}" />
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='/css/Home.css')}}" />
+    <script type="text/javascript" src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/headroom.js@0.12.0/dist/headroom.min.js"></script>
     <title>Cantina - Home</title>
+
+
 </head>
-<body>
 
-    {% if request.cookies.get('userID') %}
-        Hello {{ cur[0][0] }}<br>
-        {% if cur[0][1] %}
-            <a href="{{ url_for('admin_home') }}">Panel Administrateur</a><br>
-        {% endif %}
-    {% else %}
-        Hello unknow<br>
-        <button onclick="window.location.href='{{ url_for('login') }}'">Connexion</button><br>
-    {% endif %}
-    <a href="{{ url_for('file', path="/") }}">Mes Fichiers</a>
-
+<body class="flex-column">
+    <div class="home root">
+        <div class="image" style="--src:url({{ url_for('static', filename="/assets/ceec92877822465a603f69474a134cbb.png") }})"></div>
+        <div class="group"></div>
+        <img class="icon" src="{{ url_for('static', filename="/assets/d46f6f507a68e0fec30966ea8498f93f.png") }}" alt="alt text" /><img class="line" src="{{ url_for('static', filename="/assets/87dc98df559011bdf66830edc4186ee9.png") }}" alt="alt text" />
+        <hr class="line1" size="1" />
+        <hr class="line11" size="1" />
+        <hr class="line12" size="1" />
+        <hr class="line13" size="1" />
+        <div class="group1"></div>
+        <hr class="line12" size="1" />
+        <hr class="line1" size="1" />
+        <hr class="line14" size="1" />
+        <h1 class="big_title">CANTINA</h1>
+        <h1 class="title">Mes Fichiers:</h1>
+        <div class="rect"></div>
+        <div class="rect1"></div>
+    </div>
+    <script type="text/javascript">
+        AOS.init();
+    </script>
 </body>
+
 </html>
