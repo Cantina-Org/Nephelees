@@ -94,6 +94,6 @@ os.system('chown cantina /home/cantina/*/*/* && chgrp cantina /home/cantina/*/*/
 os.system("systemctl start cantina")
 
 print("---------------------------------------------------------------------------------------------------------------")
-os.system("rm /home/cantina/installer.py")
+os.system("rm /home/cantina/cloud/installer.py")
 print("Nous venons de finir l'instalation de Cantina! Vous pouvez maintenant sur https://127.0.0.1:5000/  pour pouvoir "
       "continuer l'installation de Cantina")
