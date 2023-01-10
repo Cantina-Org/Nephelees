@@ -403,24 +403,26 @@ def file_share(short_name=None):
 
 
 @app.route('/admin/show_share_file/')
-def admin_show_share_file():
+@app.route('/admin/show_share_file/<random_name>')
+def admin_show_share_file(random_name=None):
     admin_and_login = user_login()
     if admin_and_login[0] and admin_and_login[1]:
         cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
         user_name = cursor.fetchone()
-        if request.args.get('randomName'):
-            cursor.execute('''SELECT file_name, file_owner FROM file_sharing WHERE file_short_name=?''',
-                           (request.args.get('randomName'),))
-            row = cursor.fetchone()
-            os.remove(share_path + row[1] + '/' + row[0])
-            cursor.execute('''DELETE FROM file_sharing WHERE file_short_name = ?;''', (request.args.get('randomName'),))
-            con.commit()
-
+        try:
+            if random_name:
+                cursor.execute('''SELECT file_name, file_owner FROM file_sharing WHERE file_short_name=?''',
+                               (random_name,))
+                row = cursor.fetchone()
+                os.remove(share_path + row[1] + '/' + row[0])
+                cursor.execute('''DELETE FROM file_sharing WHERE file_short_name = ?;''', (random_name,))
+                con.commit()
+        except Exception as e:
+            make_log('error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
         cursor.execute('''SELECT * FROM file_sharing''')
         all_share_file = cursor.fetchall()
 
-        return render_template('admin/show_share_file.html', user_name=user_name,
-                               all_share_file=all_share_file), 401
+        return render_template('admin/show_share_file.html', user_name=user_name, all_share_file=all_share_file)
 
     else:
         make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2)
