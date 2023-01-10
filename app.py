@@ -64,7 +64,7 @@ share_path = os.path.abspath(os.getcwd()) + '/share/'
 app = Flask(__name__)
 app.config['UPLOAD_PATH'] = dir_path
 api_no_token = 'You must send a token in JSON with the name: `api-token`!'
-conf_file = os.open(os.path.abspath(os.getcwd())+"/config.json", os.O_RDONLY)
+conf_file = os.open(os.path.abspath(os.getcwd()) + "/config.json", os.O_RDONLY)
 config_data = json.loads(read(conf_file, 150))
 
 con = mariadb.connect(user=config_data['database_username'], password=config_data['database_password'],
@@ -87,8 +87,14 @@ con.commit()
 
 @app.route('/')
 def home():  # put application's code here
+    if not request.cookies.get('userID'):
+        return redirect(url_for('login'))
     cursor.execute('''SELECT user_name, admin FROM user WHERE token = ?''', (request.cookies.get('userID'),))
-    return render_template('home.html', cur=cursor.fetchall())
+    data = cursor.fetchone()
+    if data[1]:
+        return render_template('home-admin-view.html', cur=cursor.fetchone())
+    else:
+        return render_template('home.html', cur=cursor.fetchone())
 
 
 @app.route('/my/file/')
@@ -98,6 +104,8 @@ def file():
     args = request.args
     work_file_in_dir, work_dir = [], []
     user_token = request.cookies.get('userID')
+    if not user_token:
+        return redirect(url_for('login'))
 
     for i in random.choices(string.ascii_lowercase, k=10):
         rand_name += i
@@ -106,6 +114,7 @@ def file():
     row = cursor.fetchone()
 
     if not args.getlist('path'):
+
         if row[1]:
             for (dirpath, dirnames, filenames) in walk(dir_path):
                 work_file_in_dir.extend(filenames)

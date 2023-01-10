@@ -8,22 +8,31 @@
     <link rel="stylesheet" type="text/css" href="https://unpkg.com/aos@2.3.1/dist/aos.css" />
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="css/common.css")}}" />
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="css/fonts.css")}}"/>
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="css/Home.css")}}" />
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="css/Home_admin.css")}}" />
     <script type="text/javascript" src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script type="text/javascript" src="https://unpkg.com/headroom.js@0.12.0/dist/headroom.min.js"></script>
     <title>Cantina - Home</title>
+
+
 </head>
+
 <body class="flex-column">
     <div class="home-admin root">
-        <h1 class="title"><a href="{{ url_for('file', path="/") }}">Mes Fichiers:</a></h1>
-        <h1 class="big_title">CANTINA</h1>
-        <h5 class="highlights">USER<br />NAME</h5>
-        <img class="icon" src="{{ url_for('static', filename="assets/d8e7c8c4d828f5ca760b178fab18e546.png")}}" alt="alt text" /><img class="icon1" src="{{ url_for('static', filename="assets/ecf41deb9430e70057d1c2306ca36f02.png")}}" alt="alt text" />
         <hr class="line" size="1" />
         <hr class="line1" size="1" />
         <hr class="line2" size="1" />
         <hr class="line3" size="1" />
         <hr class="line4" size="1" />
+        <h1 class="title"><a href="{{ url_for('file', path="/") }}">Mes Fichiers:</a></h1>
+        <h1 class="big_title">CANTINA</h1>
+        <h5 class="highlights">USER<br />NAME</h5>
+        <img class="icon" src="{{ url_for('static', filename="assets/d8e7c8c4d828f5ca760b178fab18e546.png")}}" alt="alt text" /><img class="icon1" src="{{ url_for('static', filename="assets/ecf41deb9430e70057d1c2306ca36f02.png")}}" alt="alt text" />
+        <hr class="line5" size="1" />
+        <hr class="line6" size="1" />
+        <hr class="line7" size="1" />
+        <hr class="line8" size="1" />
+        <hr class="line9" size="1" />
+        <h1 class="title1"><a href="{{ url_for('admin_home') }}">Adminsistration:</a></h1>
     </div>
     <script type="text/javascript">
         AOS.init();
