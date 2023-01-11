@@ -1,9 +1,8 @@
 from werkzeug.utils import secure_filename
-from os import *
 from flask import Flask, render_template, request, url_for, redirect, make_response, send_from_directory, jsonify
+import os
 import mariadb
 import hashlib
-import os
 import subprocess
 import uuid
 import shutil
@@ -65,7 +64,7 @@ app = Flask(__name__)
 app.config['UPLOAD_PATH'] = dir_path
 api_no_token = 'You must send a token in JSON with the name: `api-token`!'
 conf_file = os.open(os.path.abspath(os.getcwd()) + "/config.json", os.O_RDONLY)
-config_data = json.loads(read(conf_file, 150))
+config_data = json.loads(os.read(conf_file, 150))
 
 con = mariadb.connect(user=config_data['database_username'], password=config_data['database_password'],
                       host="localhost", port=3306, database=config_data['database_name'])
@@ -116,12 +115,12 @@ def file():
     if not args.getlist('path'):
 
         if row[1]:
-            for (dirpath, dirnames, filenames) in walk(dir_path):
+            for (dirpath, dirnames, filenames) in os.walk(dir_path):
                 work_file_in_dir.extend(filenames)
                 work_dir.extend(dirnames)
                 break
         elif not row[1]:
-            for (dirpath, dirnames, filenames) in walk(row[0]):
+            for (dirpath, dirnames, filenames) in os.walk(row[0]):
                 work_file_in_dir.extend(filenames)
                 work_dir.extend(dirnames)
                 break
@@ -138,12 +137,12 @@ def file():
                 lastPath = lastPath + last_path_1[i] + '/'
 
         if row[1]:
-            for (dirpath, dirnames, filenames) in walk(dir_path + '/' + args.get('path')):
+            for (dirpath, dirnames, filenames) in os.walk(dir_path + '/' + args.get('path')):
                 work_file_in_dir.extend(filenames)
                 work_dir.extend(dirnames)
                 break
         elif not row[1]:
-            for (dirpath, dirnames, filenames) in walk(row[0] + args.get('path')):
+            for (dirpath, dirnames, filenames) in os.walk(row[0] + args.get('path')):
                 work_file_in_dir.extend(filenames)
                 work_dir.extend(dirnames)
                 break
