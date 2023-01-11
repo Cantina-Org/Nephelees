@@ -1,9 +1,8 @@
 from werkzeug.utils import secure_filename
-from os import *
 from flask import Flask, render_template, request, url_for, redirect, make_response, send_from_directory, jsonify
+import os
 import mariadb
 import hashlib
-import os
 import subprocess
 import uuid
 import shutil
@@ -11,6 +10,13 @@ import random
 import string
 import tarfile
 import json
+
+
+def f_user_name(user_id):
+    cursor.execute("""SELECT user_name FROM user WHERE token=?""", (user_id,))
+    data = cursor.fetchone()
+    print(data[0])
+    return data[0]
 
 
 def hash_perso(passwordtohash):
@@ -30,11 +36,11 @@ def hash_perso(passwordtohash):
 
 def user_login():
     cursor.execute('''SELECT user_name, admin FROM user WHERE token = ?''', (request.cookies.get('userID'),))
-    data = cursor.fetchall()
+    data = cursor.fetchone()
     try:
-        if data[0][0] != '' and data[0][1]:
+        if data[0] != '' and data[1]:
             return True, True
-        elif data[0][0] != '' and not data[0][1]:
+        elif data[0] != '' and not data[1]:
             return True, False
         else:
             return False, False
@@ -59,13 +65,13 @@ def make_tarfile(output_filename, source_dir):
 
 
 fd, filenames, lastPath = "", "", ""
-dir_path = os.path.abspath(os.getcwd()) + '/file_cloud/'
-share_path = os.path.abspath(os.getcwd()) + '/share/'
+dir_path = os.path.abspath(os.getcwd()) + '/file_cloud'
+share_path = os.path.abspath(os.getcwd()) + '/share'
 app = Flask(__name__)
 app.config['UPLOAD_PATH'] = dir_path
 api_no_token = 'You must send a token in JSON with the name: `api-token`!'
 conf_file = os.open(os.path.abspath(os.getcwd()) + "/config.json", os.O_RDONLY)
-config_data = json.loads(read(conf_file, 150))
+config_data = json.loads(os.read(conf_file, 150))
 
 con = mariadb.connect(user=config_data['database_username'], password=config_data['database_password'],
                       host="localhost", port=3306, database=config_data['database_name'])
@@ -116,12 +122,12 @@ def file():
     if not args.getlist('path'):
 
         if row[1]:
-            for (dirpath, dirnames, filenames) in walk(dir_path):
+            for (dirpath, dirnames, filenames) in os.walk(dir_path):
                 work_file_in_dir.extend(filenames)
                 work_dir.extend(dirnames)
                 break
         elif not row[1]:
-            for (dirpath, dirnames, filenames) in walk(row[0]):
+            for (dirpath, dirnames, filenames) in os.walk(row[0]):
                 work_file_in_dir.extend(filenames)
                 work_dir.extend(dirnames)
                 break
@@ -138,12 +144,12 @@ def file():
                 lastPath = lastPath + last_path_1[i] + '/'
 
         if row[1]:
-            for (dirpath, dirnames, filenames) in walk(dir_path + '/' + args.get('path')):
+            for (dirpath, dirnames, filenames) in os.walk(dir_path + '/' + args.get('path')):
                 work_file_in_dir.extend(filenames)
                 work_dir.extend(dirnames)
                 break
         elif not row[1]:
-            for (dirpath, dirnames, filenames) in walk(row[0] + args.get('path')):
+            for (dirpath, dirnames, filenames) in os.walk(row[0] + args.get('path')):
                 work_file_in_dir.extend(filenames)
                 work_dir.extend(dirnames)
                 break
@@ -185,7 +191,7 @@ def file():
     elif args.get('action') == "shareFile" and args.get('workFile') and args.get('loginToShow'):
         if row[1]:
             shutil.copy2(dir_path + actual_path + args.get('workFile'),
-                         share_path + row[2] + '/' + args.get('workFile'))
+                         share_path + '/' + row[2] + '/' + args.get('workFile'))
         elif not row[1]:
             shutil.copy2(row[0] + '/' + actual_path + args.get('workFile'),
                          share_path + row[2] + '/' + args.get('workFile'))
@@ -217,6 +223,52 @@ def file():
                                lastPath=lastPath)
 
 
+@app.route('/my/file/upload', methods=['GET', 'POST'])
+def upload_file():
+    args = request.args
+
+    if request.method == 'GET':
+        return render_template('upload_file.html')
+
+    elif request.method == 'POST':
+        user_token = request.cookies.get('userID')
+        user_check = user_login()
+
+        if user_check == 'UserNotFound':
+            return redirect(url_for('login'))
+        elif user_check[1]:
+            f = request.files['file']
+            f.save(os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
+            make_log('upload_file', request.remote_addr, request.cookies.get('userID'), 1,
+                     os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
+            return redirect(url_for('file', path=args.get('path')))
+        elif not user_check[1]:
+            f = request.files['file']
+            f.save(os.path.join(dir_path + '/' + f_user_name(user_token) + args.get('path'),
+                                secure_filename(f.filename)))
+            make_log('upload_file', request.remote_addr, request.cookies.get('userID'), 1,
+                     os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
+            return redirect(url_for('file', path=args.get('path')))
+
+
+@app.route('/my/file/download')
+def download_file():
+    args = request.args
+
+    user_token = request.cookies.get('userID')
+    user_check = user_login()
+
+    make_log('Download file', request.remote_addr, request.cookies.get('userID'), 1,
+             dir_path + args.get('path') + args.get('item'))
+    if user_check == 'UserNotFound':
+        return redirect(url_for('login'))
+    elif user_check[1]:
+        return send_from_directory(directory=dir_path + args.get('path'), path=args.get('item'))
+    elif not user_check[1]:
+        return send_from_directory(directory=dir_path + '/' + f_user_name(user_token) + args.get('path'),
+                                   path=args.get('item'))
+
+
 @app.route('/login', methods=['POST', 'GET'])
 def login():
     if request.method == 'POST':
@@ -237,44 +289,6 @@ def login():
 
     elif request.method == 'GET':
         return render_template('login.html')
-
-
-@app.route('/my/file/upload', methods=['GET', 'POST'])
-def upload_file():
-    args = request.args
-
-    if request.method == 'GET':
-        return render_template('upload_file.html')
-
-    elif request.method == 'POST':
-        user_token = request.cookies.get('userID')
-        cursor.execute(f'''SELECT token FROM user WHERE admin''', )
-        row = cursor.fetchall()
-
-        if not [tup for tup in row if user_token in tup]:
-            return redirect(url_for('home'))
-
-        f = request.files['file']
-        f.save(os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
-        make_log('upload_file', request.remote_addr, request.cookies.get('userID'), 1,
-                 os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
-        return redirect(url_for('file', path=args.get('path')))
-
-
-@app.route('/my/file/download')
-def download_file():
-    args = request.args
-
-    user_token = request.cookies.get('userID')
-    cursor.execute(f'''SELECT token FROM user WHERE admin''')
-    row = cursor.fetchall()
-
-    if not [tup for tup in row if user_token in tup]:
-        return redirect(url_for('home'))
-
-    make_log('Download file', request.remote_addr, request.cookies.get('userID'), 1,
-             dir_path + args.get('path') + args.get('item'))
-    return send_from_directory(directory=dir_path + args.get('path'), path=args.get('item'))
 
 
 @app.route('/admin/home')
@@ -403,24 +417,26 @@ def file_share(short_name=None):
 
 
 @app.route('/admin/show_share_file/')
-def admin_show_share_file():
+@app.route('/admin/show_share_file/<random_name>')
+def admin_show_share_file(random_name=None):
     admin_and_login = user_login()
     if admin_and_login[0] and admin_and_login[1]:
         cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
         user_name = cursor.fetchone()
-        if request.args.get('randomName'):
-            cursor.execute('''SELECT file_name, file_owner FROM file_sharing WHERE file_short_name=?''',
-                           (request.args.get('randomName'),))
-            row = cursor.fetchone()
-            os.remove(share_path + row[1] + '/' + row[0])
-            cursor.execute('''DELETE FROM file_sharing WHERE file_short_name = ?;''', (request.args.get('randomName'),))
-            con.commit()
-
+        try:
+            if random_name:
+                cursor.execute('''SELECT file_name, file_owner FROM file_sharing WHERE file_short_name=?''',
+                               (random_name,))
+                row = cursor.fetchone()
+                os.remove(share_path + row[1] + '/' + row[0])
+                cursor.execute('''DELETE FROM file_sharing WHERE file_short_name = ?;''', (random_name,))
+                con.commit()
+        except Exception as e:
+            make_log('error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
         cursor.execute('''SELECT * FROM file_sharing''')
         all_share_file = cursor.fetchall()
 
-        return render_template('admin/show_share_file.html', user_name=user_name,
-                               all_share_file=all_share_file), 401
+        return render_template('admin/show_share_file.html', user_name=user_name, all_share_file=all_share_file)
 
     else:
         make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2)

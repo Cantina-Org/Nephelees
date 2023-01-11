@@ -29,6 +29,7 @@ if os.geteuid() != 0:
 
 print("Bienvenue dans l'installation de Cantina Cloud!")
 os.system("sudo adduser cantina --system")
+os.system("sudo addgroup cantina")
 os.system("git clone https://github.com/Cantina-Org/cantina.git /home/cantina/cloud")
 os.system("mkdir /home/cantina/cloud/file_cloud /home/cantina/cloud/share")
 os.system("pip install Flask")
@@ -36,8 +37,8 @@ os.system("pip install Flask")
 print("---------------------------------------------------------------------------------------------------------------")
 while not conf1:
     print("Nous allons donc créer un premier compte administrateur.")
-    username = input("    Nom d'utilisateur: ")
-    mdp = input("   Mot de passe: ")
+    username = input("  Nom d'utilisateur: ")
+    mdp = input("  Mot de passe: ")
 
     print("Configuration de la base de donnée:")
     db_name = input("  Nom de la base de donnée: ")
@@ -51,7 +52,6 @@ while not conf1:
             conf1 = True
 
 print("---------------------------------------------------------------------------------------------------------------")
-
 
 con = mariadb.connect(user=db_uname, password=db_passw, host="localhost", port=3306, database=db_name)
 cursor = con.cursor()
@@ -68,14 +68,14 @@ cursor.execute("CREATE TABLE IF NOT EXISTS api_permission(token_api TEXT, create
                "delete_file BOOL, create_folder BOOL, delete_folder BOOL, share_file_and_folder BOOL, "
                "delete_share_file_and_folder BOOL, create_user BOOL, delete_user BOOL)")
 cursor.execute(f'''INSERT INTO user(token, user_name, password, admin, work_Dir) VALUES (?, ?, ?, ?, ?)''', (
-    str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1()))), username, hash_perso(mdp), 1, '/home/cantina/cloud/file_cloud/'+username))
+    str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1()))), username, hash_perso(mdp), 1,
+    '/home/cantina/cloud/file_cloud/' + username))
 con.commit()
 os.system("mkdir /home/cantina/cloud/file_cloud/matbe /home/cantina/cloud/share/matbe")
 
 json_data = {"database_username": db_uname, "database_password": db_passw, "database_name": db_name}
 with open("/home/cantina/cloud/config.json", "w") as outfile:
     outfile.write(json.dumps(json_data, indent=4))
-
 
 launch_startup = input("Voullez vous lancez Cantina Cloud au lancement de votre serveur?")
 os.system("touch /etc/systemd/system/cloud.service")
