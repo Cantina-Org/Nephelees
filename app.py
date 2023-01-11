@@ -217,28 +217,6 @@ def file():
                                lastPath=lastPath)
 
 
-@app.route('/login', methods=['POST', 'GET'])
-def login():
-    if request.method == 'POST':
-        user = request.form['nm']
-        passwd = request.form['passwd']
-        cursor.execute(f'''SELECT user_name, password, token FROM user WHERE password = ? AND user_name = ?''',
-                       (hash_perso(passwd), user))
-        row = cursor.fetchone()
-        try:
-            if len(row) >= 1:
-                make_log('login', request.remote_addr, row[2], 1)
-                resp = make_response(redirect(url_for('home')))
-                resp.set_cookie('userID', row[2])
-                return resp
-        except Exception as e:
-            print(e)
-            return redirect(url_for("home"))
-
-    elif request.method == 'GET':
-        return render_template('login.html')
-
-
 @app.route('/my/file/upload', methods=['GET', 'POST'])
 def upload_file():
     args = request.args
@@ -283,6 +261,28 @@ def download_file():
     elif not user_check[1]:
         return send_from_directory(directory=dir_path + '/' + f_user_name(user_token) + args.get('path'),
                                    path=args.get('item'))
+
+
+@app.route('/login', methods=['POST', 'GET'])
+def login():
+    if request.method == 'POST':
+        user = request.form['nm']
+        passwd = request.form['passwd']
+        cursor.execute(f'''SELECT user_name, password, token FROM user WHERE password = ? AND user_name = ?''',
+                       (hash_perso(passwd), user))
+        row = cursor.fetchone()
+        try:
+            if len(row) >= 1:
+                make_log('login', request.remote_addr, row[2], 1)
+                resp = make_response(redirect(url_for('home')))
+                resp.set_cookie('userID', row[2])
+                return resp
+        except Exception as e:
+            print(e)
+            return redirect(url_for("home"))
+
+    elif request.method == 'GET':
+        return render_template('login.html')
 
 
 @app.route('/admin/home')
