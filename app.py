@@ -1,5 +1,6 @@
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, url_for, redirect, make_response, send_from_directory, jsonify
+from User import f_user_name
 import os
 import mariadb
 import hashlib
@@ -29,11 +30,11 @@ def hash_perso(passwordtohash):
 
 def user_login():
     cursor.execute('''SELECT user_name, admin FROM user WHERE token = ?''', (request.cookies.get('userID'),))
-    data = cursor.fetchall()
+    data = cursor.fetchone()
     try:
-        if data[0][0] != '' and data[0][1]:
+        if data[0] != '' and data[1]:
             return True, True
-        elif data[0][0] != '' and not data[0][1]:
+        elif data[0] != '' and not data[1]:
             return True, False
         else:
             return False, False
@@ -58,8 +59,8 @@ def make_tarfile(output_filename, source_dir):
 
 
 fd, filenames, lastPath = "", "", ""
-dir_path = os.path.abspath(os.getcwd()) + '/file_cloud/'
-share_path = os.path.abspath(os.getcwd()) + '/share/'
+dir_path = os.path.abspath(os.getcwd()) + '/file_cloud'
+share_path = os.path.abspath(os.getcwd()) + '/share'
 app = Flask(__name__)
 app.config['UPLOAD_PATH'] = dir_path
 api_no_token = 'You must send a token in JSON with the name: `api-token`!'
@@ -184,7 +185,7 @@ def file():
     elif args.get('action') == "shareFile" and args.get('workFile') and args.get('loginToShow'):
         if row[1]:
             shutil.copy2(dir_path + actual_path + args.get('workFile'),
-                         share_path + row[2] + '/' + args.get('workFile'))
+                         share_path + '/' + row[2] + '/' + args.get('workFile'))
         elif not row[1]:
             shutil.copy2(row[0] + '/' + actual_path + args.get('workFile'),
                          share_path + row[2] + '/' + args.get('workFile'))
@@ -247,17 +248,23 @@ def upload_file():
 
     elif request.method == 'POST':
         user_token = request.cookies.get('userID')
-        cursor.execute(f'''SELECT token FROM user WHERE admin''', )
-        row = cursor.fetchall()
+        user_check = user_login()
 
-        if not [tup for tup in row if user_token in tup]:
-            return redirect(url_for('home'))
-
-        f = request.files['file']
-        f.save(os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
-        make_log('upload_file', request.remote_addr, request.cookies.get('userID'), 1,
-                 os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
-        return redirect(url_for('file', path=args.get('path')))
+        if user_check == 'UserNotFound':
+            return redirect(url_for('login'))
+        elif user_check[1]:
+            f = request.files['file']
+            f.save(os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
+            make_log('upload_file', request.remote_addr, request.cookies.get('userID'), 1,
+                     os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
+            return redirect(url_for('file', path=args.get('path')))
+        elif not user_check[1]:
+            f = request.files['file']
+            f.save(os.path.join(dir_path + '/' + f_user_name(user_token) + args.get('path'),
+                                secure_filename(f.filename)))
+            make_log('upload_file', request.remote_addr, request.cookies.get('userID'), 1,
+                     os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
+            return redirect(url_for('file', path=args.get('path')))
 
 
 @app.route('/my/file/download')
@@ -265,15 +272,17 @@ def download_file():
     args = request.args
 
     user_token = request.cookies.get('userID')
-    cursor.execute(f'''SELECT token FROM user WHERE admin''')
-    row = cursor.fetchall()
-
-    if not [tup for tup in row if user_token in tup]:
-        return redirect(url_for('home'))
+    user_check = user_login()
 
     make_log('Download file', request.remote_addr, request.cookies.get('userID'), 1,
              dir_path + args.get('path') + args.get('item'))
-    return send_from_directory(directory=dir_path + args.get('path'), path=args.get('item'))
+    if user_check == 'UserNotFound':
+        return redirect(url_for('login'))
+    elif user_check[1]:
+        return send_from_directory(directory=dir_path + args.get('path'), path=args.get('item'))
+    elif not user_check[1]:
+        return send_from_directory(directory=dir_path + '/' + f_user_name(user_token) + args.get('path'),
+                                   path=args.get('item'))
 
 
 @app.route('/admin/home')
