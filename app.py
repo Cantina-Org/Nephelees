@@ -1,6 +1,5 @@
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, url_for, redirect, make_response, send_from_directory, jsonify
-from User import f_user_name
 import os
 import mariadb
 import hashlib
@@ -11,6 +10,13 @@ import random
 import string
 import tarfile
 import json
+
+
+def f_user_name(user_id):
+    cursor.execute("""SELECT user_name FROM user WHERE token=?""", (user_id,))
+    data = cursor.fetchone()
+    print(data[0])
+    return data[0]
 
 
 def hash_perso(passwordtohash):
