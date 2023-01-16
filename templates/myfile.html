@@ -13,6 +13,7 @@
     <script src="{{ url_for('static', filename="share_folder.js") }}"></script>
 </head>
 <body>
+    <h1><a href="{{ url_for('home') }}">Cantina</a></h1><br>
     <button type = "button" onclick="window.location.href='{{ url_for('upload_file', path=path) }}'">Upload File</button>
     <button onclick="create_file('{{ path }}')">Create file</button>
     <button onclick="create_folder('{{ path }}')">Create Folder</button>
