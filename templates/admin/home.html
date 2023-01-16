@@ -6,7 +6,9 @@
     <title>Cantina - Admin Home</title>
 </head>
 <body>
+    <h1><a href="{{ url_for('home') }}">Cantina</a></h1>
     <h1>Hello {{ data[0][0] }}!</h1>
+
     <p>Dans votre Cantina Cloud vous avez {{ file_number }} fichier ! <br>
     La taille du dossier principale est de {{ main_folder_size }} !</p>
 
