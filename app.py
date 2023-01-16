@@ -92,10 +92,13 @@ def home():
     if not request.cookies.get('userID'):
         return redirect(url_for('login'))
     data = database.select('''SELECT user_name, admin FROM user WHERE token = ?''', (request.cookies.get('userID'),), 1)
-    if data[1]:
-        return render_template('home-admin-view.html', cur=data)
-    else:
-        return render_template('home.html', cur=data)
+    try:
+        if data[1]:
+            return render_template('home-admin-view.html', cur=data)
+        else:
+            return render_template('home.html', cur=data)
+    except IndexError:
+        return redirect(url_for('login'))
 
 
 @app.route('/my/file/')
@@ -269,11 +272,10 @@ def login():
                               (hash_perso(passwd), user), 1)
 
         try:
-            if len(row) >= 1:
-                make_log('login', request.remote_addr, row[2], 1)
-                resp = make_response(redirect(url_for('home')))
-                resp.set_cookie('userID', row[2])
-                return resp
+            make_log('login', request.remote_addr, row[2], 1)
+            resp = make_response(redirect(url_for('home')))
+            resp.set_cookie('userID', row[2])
+            return resp
         except Exception as e:
             print(e)
             return redirect(url_for("home"))

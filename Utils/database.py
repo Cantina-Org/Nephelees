@@ -38,7 +38,8 @@ class DataBase:
                 self.connection()
                 retry = True
 
-    def select(self, body, args=None, number_of_data=0):
+    def select(self, body, args=None, number_of_data=None):
+        data = None
         retry = True
         while retry:
             try:
@@ -46,8 +47,10 @@ class DataBase:
                     self.cursor.execute(body, args)
                 else:
                     self.cursor.execute(body)
-                if number_of_data == 0:
+                if not number_of_data:
                     data = self.cursor.fetchall()
+                elif number_of_data == 1:
+                    data = self.cursor.fetchone()
                 else:
                     data = self.cursor.fetchmany(number_of_data)
                 retry = False
