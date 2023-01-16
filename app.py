@@ -1,7 +1,6 @@
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, url_for, redirect, make_response, send_from_directory, jsonify
 import os
-import mariadb
 import hashlib
 import subprocess
 import uuid
@@ -10,12 +9,11 @@ import random
 import string
 import tarfile
 import json
+import Utils.database
 
 
 def f_user_name(user_id):
-    cursor.execute("""SELECT user_name FROM user WHERE token=?""", (user_id,))
-    data = cursor.fetchone()
-    print(data[0])
+    data = database.select("""SELECT user_name FROM user WHERE token=?""", (user_id,), 1)
     return data[0]
 
 
@@ -35,20 +33,8 @@ def hash_perso(passwordtohash):
 
 
 def user_login():
-    global con, cursor
-    i = False
-    while not i:
-        try:
-            cursor.execute('''SELECT user_name, admin FROM user WHERE token = ?''', (request.cookies.get('userID'),))
-            data = cursor.fetchone()
-            i = True
-        except mariadb.InterfaceError:
-            i = False
-            cursor.close()
-            con.close()
-            con = mariadb.connect(user=config_data['database_username'], password=config_data['database_password'],
-                                  host="localhost", port=3306, database=config_data['database_name'])
-            cursor = con.cursor()
+    data = database.select(body='''SELECT user_name, admin FROM user WHERE token = ?''',
+                           args=(request.cookies.get('userID'),), number_of_data=10)
     try:
         if data[0] != '' and data[1]:
             return True, True
@@ -56,8 +42,7 @@ def user_login():
             return True, False
         else:
             return False, False
-    except IndexError as e:
-        print(e)
+    except IndexError:
         return 'UserNotFound'
 
 
@@ -85,34 +70,34 @@ api_no_token = 'You must send a token in JSON with the name: `api-token`!'
 conf_file = os.open(os.path.abspath(os.getcwd()) + "/config.json", os.O_RDONLY)
 config_data = json.loads(os.read(conf_file, 150))
 
-con = mariadb.connect(user=config_data['database_username'], password=config_data['database_password'],
-                      host="localhost", port=3306, database=config_data['database_name'])
-cursor = con.cursor()
-cursor.execute("CREATE TABLE IF NOT EXISTS user(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
-               "user_name TEXT, password TEXT, admin BOOL, work_Dir TEXT, online BOOL, last_online TEXT)")
-cursor.execute("CREATE TABLE IF NOT EXISTS log(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, name TEXT, user_ip text,"
-               "user_token TEXT, argument TEXT, log_level INT, date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
-cursor.execute("CREATE TABLE IF NOT EXISTS file_sharing(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, file_name TEXT, "
-               "file_owner text, file_short_name TEXT, login_to_show BOOL DEFAULT 1, password TEXT,"
-               "date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
-cursor.execute("CREATE TABLE IF NOT EXISTS api(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, api_name TEXT,"
-               "api_desc TEXT, owner TEXT)")
-cursor.execute("CREATE TABLE IF NOT EXISTS api_permission(token_api TEXT, create_file BOOL, upload_file BOOL, "
-               "delete_file BOOL, create_folder BOOL, delete_folder BOOL, share_file_and_folder BOOL, "
-               "delete_share_file_and_folder BOOL, create_user BOOL, delete_user BOOL)")
-con.commit()
+database = Utils.database.DataBase(user=config_data['database_username'], password=config_data['database_password'],
+                                   host="localhost", port=3306, database=config_data['database_name'])
+database.connection()
+
+database.create_table("CREATE TABLE IF NOT EXISTS user(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
+                      "user_name TEXT, password TEXT, admin BOOL, work_Dir TEXT, online BOOL, last_online TEXT)")
+database.create_table("CREATE TABLE IF NOT EXISTS log(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, name TEXT, "
+                      "user_ip text, user_token TEXT, argument TEXT, log_level INT, "
+                      "date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+database.create_table("CREATE TABLE IF NOT EXISTS file_sharing(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, "
+                      "file_name TEXT, file_owner text, file_short_name TEXT, login_to_show BOOL DEFAULT 1, "
+                      "password TEXT, date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+database.create_table("CREATE TABLE IF NOT EXISTS api(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
+                      "api_name TEXT, api_desc TEXT, owner TEXT)")
+database.create_table("CREATE TABLE IF NOT EXISTS api_permission(token_api TEXT, create_file BOOL, upload_file BOOL, "
+                      "delete_file BOOL, create_folder BOOL, delete_folder BOOL, share_file_and_folder BOOL, "
+                      "delete_share_file_and_folder BOOL, create_user BOOL, delete_user BOOL)")
 
 
 @app.route('/')
 def home():
     if not request.cookies.get('userID'):
         return redirect(url_for('login'))
-    cursor.execute('''SELECT user_name, admin FROM user WHERE token = ?''', (request.cookies.get('userID'),))
-    data = cursor.fetchone()
+    data = database.select('''SELECT user_name, admin FROM user WHERE token = ?''', (request.cookies.get('userID'),), 1)
     if data[1]:
-        return render_template('home-admin-view.html', cur=cursor.fetchone())
+        return render_template('home-admin-view.html', cur=data)
     else:
-        return render_template('home.html', cur=cursor.fetchone())
+        return render_template('home.html', cur=data)
 
 
 @app.route('/my/file/')
