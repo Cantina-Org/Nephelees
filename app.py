@@ -284,6 +284,14 @@ def login():
         return render_template('login.html')
 
 
+@app.route('/logout', methods=['POST', 'GET'])
+def logout():
+    make_log('logout', request.remote_addr, request.cookies.get('userID'), 1)
+    resp = make_response(redirect(url_for('home')))
+    resp.set_cookie('userID', '', expires=0)
+    return resp
+
+
 @app.route('/admin/home')
 def admin_home():
     try:
