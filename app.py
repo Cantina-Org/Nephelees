@@ -47,11 +47,11 @@ def user_login():
 
 def make_log(action_name, user_ip, user_token, log_level, argument=None, content=None):
     if content:
-        cursor.execute('''INSERT INTO log(name, user_ip, user_token, argument, log_level) VALUES (?,?, ?,?,?)''',
-                       (str(action_name), str(user_ip), str(content), argument, log_level))
+        database.insert('''INSERT INTO log(name, user_ip, user_token, argument, log_level) VALUES (?,?, ?,?,?)''',
+                        (str(action_name), str(user_ip), str(content), argument, log_level))
     else:
-        cursor.execute('''INSERT INTO log(name, user_ip, user_token, argument, log_level) VALUES (?,?, ?,?,?)''',
-                       (str(action_name), str(user_ip), str(user_token), argument, log_level))
+        database.insert('''INSERT INTO log(name, user_ip, user_token, argument, log_level) VALUES (?,?, ?,?,?)''',
+                        (str(action_name), str(user_ip), str(user_token), argument, log_level))
 
 
 def make_tarfile(output_filename, source_dir):
@@ -188,7 +188,7 @@ def file():
         elif not row[1]:
             shutil.copy2(row[0] + '/' + actual_path + args.get('workFile'),
                          share_path + row[2] + '/' + args.get('workFile'))
-        cursor.execute('''INSERT INTO file_sharing(file_name, file_owner, file_short_name, login_to_show, password) 
+        database.insert('''INSERT INTO file_sharing(file_name, file_owner, file_short_name, login_to_show, password) 
                                     VALUES (?, ?, ?, ?, ?)''', (args.get('workFile'), row[2],
                                                                 rand_name, args.get('loginToShow'),
                                                                 hash_perso(args.get('password'))))
@@ -202,7 +202,7 @@ def file():
         elif not row[1]:
             make_tarfile(share_path + row[2] + '/' + args.get('workFolder') + '.tar.gz',
                          row[0] + '/' + actual_path + args.get('workFolder'))
-        cursor.execute('''INSERT INTO file_sharing(file_name, file_owner, file_short_name, login_to_show, password) 
+        database.insert('''INSERT INTO file_sharing(file_name, file_owner, file_short_name, login_to_show, password) 
                                     VALUES (?, ?, ?, ?, ?)''', (args.get('workFolder') + '.tar.gz', row[2],
                                                                 rand_name, args.get('loginToShow'),
                                                                 hash_perso(args.get('password'))))
@@ -346,7 +346,7 @@ def admin_add_user():
                         print(e)
                         admin = False
                     new_uuid = str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())))
-                    cursor.execute('''INSERT INTO user(token, user_name, password, admin, work_Dir) VALUES (?, ?, ?, 
+                    database.insert('''INSERT INTO user(token, user_name, password, admin, work_Dir) VALUES (?, ?, ?, 
                             ?, ?)''', (new_uuid, request.form['uname'], hash_perso(request.form['pword2']), admin,
                                        dir_path + '/' + secure_filename(request.form['uname'])))
                     os.mkdir(dir_path + '/' + secure_filename(request.form['uname']))
@@ -410,7 +410,7 @@ def admin_show_share_file(random_name=None):
                 row = database.select('''SELECT file_name, file_owner FROM file_sharing WHERE file_short_name=?''',
                                       (random_name,), 1)
                 os.remove(share_path + row[1] + '/' + row[0])
-                cursor.execute('''DELETE FROM file_sharing WHERE file_short_name = ?;''', (random_name,))
+                database.insert('''DELETE FROM file_sharing WHERE file_short_name = ?;''', (random_name,))
         except Exception as e:
             make_log('error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
         all_share_file = database.select('''SELECT * FROM file_sharing''')
@@ -471,10 +471,10 @@ def admin_add_api():
                 api_delete_user = 1
 
             new_uuid = str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())))
-            cursor.execute('''INSERT INTO api(token, api_name, api_desc, owner) VALUES (?, ?, ?, ?)''',
-                           (new_uuid, request.form.get('api-name'), request.form.get('api-desc'),
-                            request.cookies.get('userID')))
-            cursor.execute('''INSERT INTO api_permission(token_api, create_file, upload_file, delete_file, 
+            database.insert('''INSERT INTO api(token, api_name, api_desc, owner) VALUES (?, ?, ?, ?)''',
+                            (new_uuid, request.form.get('api-name'), request.form.get('api-desc'),
+                             request.cookies.get('userID')))
+            database.insert('''INSERT INTO api_permission(token_api, create_file, upload_file, delete_file, 
             create_folder, delete_folder, share_file_and_folder, delete_share_file_and_folder, create_user, 
             delete_user) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (new_uuid, api_create_file, api_upload_file,
                                                                     api_delete_file, api_create_folder,
@@ -557,7 +557,7 @@ def add_user_api():
             if content['admin'] == 1:
                 admin = True
 
-            cursor.execute('''INSERT INTO user(token, user_name, password, admin, work_Dir) 
+            database.insert('''INSERT INTO user(token, user_name, password, admin, work_Dir) 
                             VALUES (?, ?, ?, ?, ?)''', (new_uuid, content['username'], hash_perso(content['password']),
                                                         admin, dir_path + '/' + secure_filename(content['username'])))
             make_log('add_user_api', request.remote_addr, request.cookies.get('userID'), 4,

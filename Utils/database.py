@@ -22,7 +22,21 @@ class DataBase:
         self.connector.commit()
 
     def insert(self, body, args):
-        pass
+        retry = True
+        while retry:
+            try:
+                if args:
+                    self.cursor.execute(body, args)
+                    self.connector.commit()
+                else:
+                    return "Error: Args Is Needed"
+                retry = False
+                return True
+            except mariadb.InterfaceError:
+                self.cursor.close()
+                self.connector.close()
+                self.connection()
+                retry = True
 
     def select(self, body, args=None, number_of_data=0):
         retry = True
