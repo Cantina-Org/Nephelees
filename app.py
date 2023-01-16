@@ -35,8 +35,20 @@ def hash_perso(passwordtohash):
 
 
 def user_login():
-    cursor.execute('''SELECT user_name, admin FROM user WHERE token = ?''', (request.cookies.get('userID'),))
-    data = cursor.fetchone()
+    global con, cursor
+    i = False
+    while not i:
+        try:
+            cursor.execute('''SELECT user_name, admin FROM user WHERE token = ?''', (request.cookies.get('userID'),))
+            data = cursor.fetchone()
+            i = True
+        except mariadb.InterfaceError:
+            i = False
+            cursor.close()
+            con.close()
+            con = mariadb.connect(user=config_data['database_username'], password=config_data['database_password'],
+                                  host="localhost", port=3306, database=config_data['database_name'])
+            cursor = con.cursor()
     try:
         if data[0] != '' and data[1]:
             return True, True
@@ -92,7 +104,7 @@ con.commit()
 
 
 @app.route('/')
-def home():  # put application's code here
+def home():
     if not request.cookies.get('userID'):
         return redirect(url_for('login'))
     cursor.execute('''SELECT user_name, admin FROM user WHERE token = ?''', (request.cookies.get('userID'),))
