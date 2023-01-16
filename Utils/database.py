@@ -24,11 +24,14 @@ class DataBase:
     def insert(self, body, args):
         pass
 
-    def select(self, body, args, number_of_data):
+    def select(self, body, args=None, number_of_data=0):
         retry = True
         while retry:
             try:
-                self.cursor.execute(body, args)
+                if args:
+                    self.cursor.execute(body, args)
+                else:
+                    self.cursor.execute(body)
                 if number_of_data == 0:
                     data = self.cursor.fetchall()
                 else:

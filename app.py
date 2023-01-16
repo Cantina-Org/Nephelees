@@ -33,8 +33,7 @@ def hash_perso(passwordtohash):
 
 
 def user_login():
-    data = database.select(body='''SELECT user_name, admin FROM user WHERE token = ?''',
-                           args=(request.cookies.get('userID'),), number_of_data=10)
+    data = database.select('''SELECT user_name, admin FROM user WHERE token = ?''', (request.cookies.get('userID'),), 1)
     try:
         if data[0] != '' and data[1]:
             return True, True
@@ -53,7 +52,6 @@ def make_log(action_name, user_ip, user_token, log_level, argument=None, content
     else:
         cursor.execute('''INSERT INTO log(name, user_ip, user_token, argument, log_level) VALUES (?,?, ?,?,?)''',
                        (str(action_name), str(user_ip), str(user_token), argument, log_level))
-    con.commit()
 
 
 def make_tarfile(output_filename, source_dir):
@@ -113,11 +111,9 @@ def file():
     for i in random.choices(string.ascii_lowercase, k=10):
         rand_name += i
 
-    cursor.execute(f'''SELECT work_Dir, admin, user_name FROM user WHERE token = ?''', (user_token,))
-    row = cursor.fetchone()
+    row = database.select(f'''SELECT work_Dir, admin, user_name FROM user WHERE token = ?''', (user_token,), 1)
 
     if not args.getlist('path'):
-
         if row[1]:
             for (dirpath, dirnames, filenames) in os.walk(dir_path):
                 work_file_in_dir.extend(filenames)
@@ -196,7 +192,6 @@ def file():
                                     VALUES (?, ?, ?, ?, ?)''', (args.get('workFile'), row[2],
                                                                 rand_name, args.get('loginToShow'),
                                                                 hash_perso(args.get('password'))))
-        con.commit()
         return render_template("redirect/r-myfile-clipboardcopy.html", short_name=rand_name,
                                path="/my/file/?path=" + actual_path)
 
@@ -211,7 +206,6 @@ def file():
                                     VALUES (?, ?, ?, ?, ?)''', (args.get('workFolder') + '.tar.gz', row[2],
                                                                 rand_name, args.get('loginToShow'),
                                                                 hash_perso(args.get('password'))))
-        con.commit()
         return render_template("redirect/r-myfile-clipboardcopy.html", short_name=rand_name,
                                path="/my/file/?path=" + actual_path)
 
@@ -271,9 +265,9 @@ def login():
     if request.method == 'POST':
         user = request.form['nm']
         passwd = request.form['passwd']
-        cursor.execute(f'''SELECT user_name, password, token FROM user WHERE password = ? AND user_name = ?''',
-                       (hash_perso(passwd), user))
-        row = cursor.fetchone()
+        row = database.select(f'''SELECT user_name, password, token FROM user WHERE password = ? AND user_name = ?''',
+                              (hash_perso(passwd), user), 1)
+
         try:
             if len(row) >= 1:
                 make_log('login', request.remote_addr, row[2], 1)
@@ -297,8 +291,8 @@ def admin_home():
             for root_dir, cur_dir, files in os.walk(dir_path):
                 count += len(files)
             main_folder_size = subprocess.check_output(['du', '-sh', dir_path]).split()[0].decode('utf-8')
-            cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
-            user_name = cursor.fetchall()
+            user_name = database.select('''SELECT user_name FROM user WHERE token=?''',
+                                        (request.cookies.get('userID'),))
             return render_template('admin/home.html', data=user_name, file_number=count,
                                    main_folder_size=main_folder_size)
         else:
@@ -316,14 +310,13 @@ def admin_user_manager(user_name=None):
         admin_and_login = user_login()
         if admin_and_login[0] and admin_and_login[1]:
             if user_name:
-                cursor.execute('''SELECT * FROM user WHERE user_name=?''', (user_name,))
-                user_account = cursor.fetchall()
+                user_account = database.select('''SELECT * FROM user WHERE user_name=?''', (user_name,))
+
                 return render_template('admin/specific_user_manager.html', user_account=user_account[0])
             else:
-                cursor.execute('''SELECT * FROM user''')
-                all_account = cursor.fetchall()
-                cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
-                user_name = cursor.fetchall()
+                all_account = database.select(body='''SELECT * FROM user''', number_of_data=0)
+                user_name = database.select('''SELECT user_name FROM user WHERE token=?''',
+                                            (request.cookies.get('userID'),))
                 return render_template('admin/user_manager.html', user_name=user_name,
                                        all_account=all_account)
         else:
@@ -339,8 +332,8 @@ def admin_add_user():
         admin_and_login = user_login()
         if admin_and_login[0] and admin_and_login[1]:
             if request.method == 'GET':
-                cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
-                user_name = cursor.fetchall()
+                user_name = database.select('''SELECT user_name FROM user WHERE token=?''',
+                                            (request.cookies.get('userID'),))
                 return render_template('admin/add_user.html', user_name=user_name)
             elif request.method == 'POST':
                 if request.form['pword1'] == request.form['pword2']:
@@ -356,7 +349,6 @@ def admin_add_user():
                     cursor.execute('''INSERT INTO user(token, user_name, password, admin, work_Dir) VALUES (?, ?, ?, 
                             ?, ?)''', (new_uuid, request.form['uname'], hash_perso(request.form['pword2']), admin,
                                        dir_path + '/' + secure_filename(request.form['uname'])))
-                    con.commit()
                     os.mkdir(dir_path + '/' + secure_filename(request.form['uname']))
                     make_log('add_user', request.remote_addr, request.cookies.get('userID'), 2,
                              'Created user token: ' + new_uuid)
@@ -375,16 +367,11 @@ def admin_show_log(log_id=None):
         admin_and_login = user_login()
         if admin_and_login[0] and admin_and_login[1]:
             if log_id:
-                cursor.execute('''SELECT * FROM log WHERE ID=?''', (log_id,))
-                log = cursor.fetchone()
+                log = database.select('''SELECT * FROM log WHERE ID=?''', (log_id,), 1)
                 return render_template('admin/specific_log.html', log=log)
             else:
-                cursor.execute('''SELECT * FROM log''')
-                all_log = cursor.fetchall()
-                cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
-                user_name = cursor.fetchall()
-                return render_template('admin/show_log.html', user_name=user_name,
-                                       all_log=all_log)
+                all_log = database.select('''SELECT * FROM log''')
+                return render_template('admin/show_log.html', all_log=all_log)
     except Exception as e:
         make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
         return redirect(url_for('home'))
@@ -392,8 +379,7 @@ def admin_show_log(log_id=None):
 
 @app.route('/file_share/<short_name>')
 def file_share(short_name=None):
-    cursor.execute('''SELECT * FROM file_sharing WHERE file_short_name=?''', (short_name,))
-    row = cursor.fetchone()
+    row = database.select('''SELECT * FROM file_sharing WHERE file_short_name=?''', (short_name,), 1)
     is_login = user_login()
     if row[4]:
         if is_login[0]:
@@ -418,21 +404,16 @@ def file_share(short_name=None):
 def admin_show_share_file(random_name=None):
     admin_and_login = user_login()
     if admin_and_login[0] and admin_and_login[1]:
-        cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
-        user_name = cursor.fetchone()
+        user_name = database.select('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),), 1)
         try:
             if random_name:
-                cursor.execute('''SELECT file_name, file_owner FROM file_sharing WHERE file_short_name=?''',
-                               (random_name,))
-                row = cursor.fetchone()
+                row = database.select('''SELECT file_name, file_owner FROM file_sharing WHERE file_short_name=?''',
+                                      (random_name,), 1)
                 os.remove(share_path + row[1] + '/' + row[0])
                 cursor.execute('''DELETE FROM file_sharing WHERE file_short_name = ?;''', (random_name,))
-                con.commit()
         except Exception as e:
             make_log('error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
-        cursor.execute('''SELECT * FROM file_sharing''')
-        all_share_file = cursor.fetchall()
-
+        all_share_file = database.select('''SELECT * FROM file_sharing''')
         return render_template('admin/show_share_file.html', user_name=user_name, all_share_file=all_share_file)
 
     else:
@@ -446,14 +427,12 @@ def admin_api_manager(api_id=None):
     admin_and_login = user_login()
     if admin_and_login[0] and admin_and_login[1]:
         if api_id:
-            cursor.execute('''SELECT * FROM api WHERE ID=?''', (api_id,))
-            api = cursor.fetchall()
+            api = database.select('''SELECT * FROM api WHERE ID=?''', (api_id,))
             return render_template('admin/specific_api_manager.html', api=api[0])
         else:
-            cursor.execute('''SELECT * FROM api''')
-            api = cursor.fetchall()
-            cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
-            user_name = cursor.fetchall()
+            api = database.select('''SELECT * FROM api''')
+            user_name = database.select('''SELECT user_name FROM user WHERE token=?''',
+                                        (request.cookies.get('userID'),))
             return render_template('admin/api_manager.html', user_name=user_name, api=api)
     else:
         make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2)
@@ -467,8 +446,9 @@ def admin_add_api():
     admin_and_login = user_login()
     if admin_and_login[0] and admin_and_login[1]:
         if request.method == 'GET':
-            cursor.execute('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),))
-            user_name = cursor.fetchall()
+            user_name = database.select('''SELECT user_name FROM user WHERE token=?''',
+                                        (request.cookies.get('userID'),))
+
             return render_template('admin/add_api.html', user_name=user_name)
         elif request.method == 'POST':
             if request.form.get('api_create_file'):
@@ -501,7 +481,7 @@ def admin_add_api():
                                                                     api_delete_folder, api_share_file_folder,
                                                                     api_delete_share_file_folder, api_create_user,
                                                                     api_delete_user))
-            con.commit()
+
             make_log('add_api', request.remote_addr, request.cookies.get('userID'), 2,
                      'Created API token: ' + new_uuid)
             return redirect(url_for('admin_api_manager'))
@@ -528,8 +508,7 @@ def admin_add_api():
 @app.route('/api/v1/test_connection', methods=['GET'])
 def test_connection():
     content = request.json
-    cursor.execute('''SELECT * FROM api where token=?''', (content['api-token'],))
-    row1 = cursor.fetchone()
+    row1 = database.select('''SELECT * FROM api where token=?''', (content['api-token'],), 1)
     make_log('test_connection', request.remote_addr, content['api-token'], 4, content['api-token'])
     return jsonify({
         "status-code": "200",
@@ -544,10 +523,8 @@ def test_connection():
 @app.route('/api/v1/show_permission', methods=['GET'])
 def show_permission():
     content = request.json
-    cursor.execute('''SELECT * FROM api where token=?''', (content['api-token'],))
-    row1 = cursor.fetchone()
-    cursor.execute('''SELECT * FROM api_permission where token_api=?''', (content['api-token'],))
-    row2 = cursor.fetchone()
+    row1 = database.select('''SELECT * FROM api where token=?''', (content['api-token'],), 1)
+    row2 = database.select('''SELECT * FROM api_permission where token_api=?''', (content['api-token'],), 1)
     make_log('show_permission', request.remote_addr, content['api-token'], 4, content['api-token'])
 
     return jsonify({
@@ -572,10 +549,8 @@ def show_permission():
 def add_user_api():
     admin = False
     content = request.json
-    cursor.execute('''SELECT * FROM api where token=?''', (content['api-token'],))
-    row1 = cursor.fetchone()
-    cursor.execute('''SELECT * FROM api_permission where token_api=?''', (content['api-token'],))
-    row2 = cursor.fetchone()
+    row1 = database.select('''SELECT * FROM api where token=?''', (content['api-token'],), 1)
+    row2 = database.select('''SELECT * FROM api_permission where token_api=?''', (content['api-token'],), 1)
     if row2[8]:
         try:
             new_uuid = str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())))
@@ -585,7 +560,6 @@ def add_user_api():
             cursor.execute('''INSERT INTO user(token, user_name, password, admin, work_Dir) 
                             VALUES (?, ?, ?, ?, ?)''', (new_uuid, content['username'], hash_perso(content['password']),
                                                         admin, dir_path + '/' + secure_filename(content['username'])))
-            con.commit()
             make_log('add_user_api', request.remote_addr, request.cookies.get('userID'), 4,
                      'Created User token: ' + new_uuid, content['api-token'])
             return jsonify({
