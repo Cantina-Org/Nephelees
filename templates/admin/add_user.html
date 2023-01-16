@@ -6,6 +6,7 @@
     <title>Cantina - Admin User Manager</title>
 </head>
 <body>
+    <h1><a href="{{ url_for('admin_home') }}">Cantina</a></h1><br>
     <form action="{{ url_for('admin_add_user') }}" method="post">
         <label>User Name: </label>
         <label><input type="text" placeholder="Enter Username" name="uname" required></label><br>

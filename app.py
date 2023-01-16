@@ -1,5 +1,6 @@
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, url_for, redirect, make_response, send_from_directory, jsonify
+import datetime
 import os
 import hashlib
 import subprocess
@@ -275,6 +276,7 @@ def login():
             make_log('login', request.remote_addr, row[2], 1)
             resp = make_response(redirect(url_for('home')))
             resp.set_cookie('userID', row[2])
+            database.insert(f'''UPDATE user SET last_online=? WHERE token=?''', (datetime.datetime.now(), row[2]))
             return resp
         except Exception as e:
             print(e)
@@ -282,6 +284,14 @@ def login():
 
     elif request.method == 'GET':
         return render_template('login.html')
+
+
+@app.route('/logout', methods=['POST', 'GET'])
+def logout():
+    make_log('logout', request.remote_addr, request.cookies.get('userID'), 1)
+    resp = make_response(redirect(url_for('home')))
+    resp.set_cookie('userID', '', expires=0)
+    return resp
 
 
 @app.route('/admin/home')
