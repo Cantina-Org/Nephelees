@@ -2,7 +2,6 @@ import mariadb
 
 
 class DataBase:
-
     def __init__(self, user, password, host, port, database):
         self.database = database
         self.port = port
