@@ -69,10 +69,12 @@ api_no_token = 'You must send a token in JSON with the name: `api-token`!'
 conf_file = os.open(os.path.abspath(os.getcwd()) + "/config.json", os.O_RDONLY)
 config_data = json.loads(os.read(conf_file, 150))
 
+# Connection à la base de donnée
 database = Utils.database.DataBase(user=config_data['database_username'], password=config_data['database_password'],
                                    host="localhost", port=3306, database=config_data['database_name'])
 database.connection()
 
+# Creation des tables de la base donnée
 database.create_table("CREATE TABLE IF NOT EXISTS user(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
                       "user_name TEXT, password TEXT, admin BOOL, work_Dir TEXT, online BOOL, last_online TEXT)")
 database.create_table("CREATE TABLE IF NOT EXISTS log(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, name TEXT, "
@@ -87,6 +89,8 @@ database.create_table("CREATE TABLE IF NOT EXISTS api_permission(token_api TEXT,
                       "delete_file BOOL, create_folder BOOL, delete_folder BOOL, share_file_and_folder BOOL, "
                       "delete_share_file_and_folder BOOL, create_user BOOL, delete_user BOOL)")
 
+
+# Fonction définissant la racine de Cantina Cloud
 @app.route('/')
 def home():
     print("IP: "+request.environ.get('HTTP_X_FORWARDED_FOR'))
@@ -102,6 +106,7 @@ def home():
         return redirect(url_for('login'))
 
 
+# Fonction permettant de voire les fichiers de Cantina Cloud
 @app.route('/my/file/')
 def file():
     global filenames, lastPath, fd
@@ -109,6 +114,7 @@ def file():
     args = request.args
     work_file_in_dir, work_dir = [], []
     user_token = request.cookies.get('userID')
+    # Redirection vers la connection si l'utilisateur n'est pas connecté
     if not user_token:
         return redirect(url_for('login'))
 
@@ -218,6 +224,7 @@ def file():
                                lastPath=lastPath)
 
 
+# Fonction permettant d'upload un fichier dans le dossier dans lequelle on est
 @app.route('/my/file/upload', methods=['GET', 'POST'])
 def upload_file():
     args = request.args
@@ -246,6 +253,7 @@ def upload_file():
             return redirect(url_for('file', path=args.get('path')))
 
 
+# Fonction permettant de télécharger le fichier sélectionné
 @app.route('/my/file/download')
 def download_file():
     args = request.args
@@ -264,6 +272,32 @@ def download_file():
                                    path=args.get('item'))
 
 
+# Fonction permettant de voire les fichiers partagé
+@app.route('/file_share/<short_name>')
+def file_share(short_name=None):
+    print(short_name.lower())
+    row = database.select(body='''SELECT * FROM file_sharing WHERE file_short_name=?''', args=(short_name,), number_of_data=1)
+    print(row)
+    is_login = user_login()
+    if not row[4]:
+        if not row[5]:
+            return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
+        elif row[5] != "" and request.args.get('password') != "":
+            if hash_perso(request.args.get('password')) == row[5]:
+                return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
+            else:
+                return render_template('redirect/r-share-file-with-password.html', short_name=short_name)
+        elif row[5] != "" and request.args.get('password') == "":
+            return render_template('redirect/r-share-file-with-password.html', short_name=short_name)
+
+    elif row[4]:
+        if is_login[0]:
+            return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
+        elif is_login == 'UserNotFound':
+            return url_for('login')
+
+
+# Fonction permettant de se connecter à Cantina Cloud
 @app.route('/login', methods=['POST', 'GET'])
 def login():
     if request.method == 'POST':
@@ -286,6 +320,7 @@ def login():
         return render_template('login.html')
 
 
+# Fonction permettant de se déconnecter de Cantina Cloud
 @app.route('/logout', methods=['POST', 'GET'])
 def logout():
     make_log('logout', request.remote_addr, request.cookies.get('userID'), 1)
@@ -294,6 +329,7 @@ def logout():
     return resp
 
 
+# Fonction permettant de voire la page 'principale' du panel Admin de Cantina Cloud 
 @app.route('/admin/home')
 def admin_home():
     try:
@@ -315,6 +351,7 @@ def admin_home():
         return redirect(url_for('home'))
 
 
+# Fonction permettant de visualiser les utilisateur de Cantina Cloud
 @app.route('/admin/usermanager/')
 @app.route('/admin/usermanager/<user_name>')
 def admin_user_manager(user_name=None):
@@ -338,6 +375,7 @@ def admin_user_manager(user_name=None):
         return redirect(url_for('home'))
 
 
+# Fonction permettant de créer un utilisateur
 @app.route('/admin/add_user/', methods=['POST', 'GET'])
 def admin_add_user():
     try:
@@ -372,6 +410,7 @@ def admin_add_user():
         return redirect(url_for('home'))
 
 
+# Fonction permettant de voire les logs générer par Cantina Cloud
 @app.route('/admin/show_log/')
 @app.route('/admin/show_log/<log_id>')
 def admin_show_log(log_id=None):
@@ -389,30 +428,7 @@ def admin_show_log(log_id=None):
         return redirect(url_for('home'))
 
 
-@app.route('/file_share/<short_name>')
-def file_share(short_name=None):
-    print(short_name.lower())
-    row = database.select(body='''SELECT * FROM file_sharing WHERE file_short_name=?''', args=(short_name,), number_of_data=1)
-    print(row)
-    is_login = user_login()
-    if not row[4]:
-        if not row[5]:
-            return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
-        elif row[5] != "" and request.args.get('password') != "":
-            if hash_perso(request.args.get('password')) == row[5]:
-                return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
-            else:
-                return render_template('redirect/r-share-file-with-password.html', short_name=short_name)
-        elif row[5] != "" and request.args.get('password') == "":
-            return render_template('redirect/r-share-file-with-password.html', short_name=short_name)
-
-    elif row[4]:
-        if is_login[0]:
-            return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
-        elif is_login == 'UserNotFound':
-            return url_for('login')
-
-
+# Fonction permettant de voire tout les fichiers partagé
 @app.route('/admin/show_share_file/')
 @app.route('/admin/show_share_file/<random_name>')
 def admin_show_share_file(random_name=None):
@@ -435,6 +451,7 @@ def admin_show_share_file(random_name=None):
         return redirect(url_for('home'))
 
 
+# Fonction permettant de voire les API créer sur Cantina Cloud
 @app.route('/admin/api_manager/')
 @app.route('/admin/api_manager/<api_id>')
 def admin_api_manager(api_id=None):
@@ -453,6 +470,7 @@ def admin_api_manager(api_id=None):
         return redirect(url_for('home'))
 
 
+# Fonction permettant de créer une API Cantina Cloud
 @app.route('/admin/add_api/', methods=['POST', 'GET'])
 def admin_add_api():
     api_create_file, api_upload_file, api_delete_file, api_create_folder, api_delete_folder, api_share_file_folder, \
