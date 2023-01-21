@@ -87,10 +87,9 @@ database.create_table("CREATE TABLE IF NOT EXISTS api_permission(token_api TEXT,
                       "delete_file BOOL, create_folder BOOL, delete_folder BOOL, share_file_and_folder BOOL, "
                       "delete_share_file_and_folder BOOL, create_user BOOL, delete_user BOOL)")
 
-print(database.select('''SELECT * FROM file_sharing WHERE file_short_name=?''', ("lmsdqpnymq",), 1))
-
 @app.route('/')
 def home():
+    print("IP: "+request.environ.get('HTTP_X_FORWARDED_FOR'))
     if not request.cookies.get('userID'):
         return redirect(url_for('login'))
     data = database.select('''SELECT user_name, admin FROM user WHERE token = ?''', (request.cookies.get('userID'),), 1)
