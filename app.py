@@ -42,7 +42,7 @@ def user_login():
             return True, False
         else:
             return False, False
-    except IndexError:
+    except:
         return 'UserNotFound'
 
 
@@ -87,6 +87,7 @@ database.create_table("CREATE TABLE IF NOT EXISTS api_permission(token_api TEXT,
                       "delete_file BOOL, create_folder BOOL, delete_folder BOOL, share_file_and_folder BOOL, "
                       "delete_share_file_and_folder BOOL, create_user BOOL, delete_user BOOL)")
 
+print(database.select('''SELECT * FROM file_sharing WHERE file_short_name=?''', ("lmsdqpnymq",), 1))
 
 @app.route('/')
 def home():
@@ -391,15 +392,11 @@ def admin_show_log(log_id=None):
 
 @app.route('/file_share/<short_name>')
 def file_share(short_name=None):
-    row = database.select('''SELECT * FROM file_sharing WHERE file_short_name=?''', (short_name,), 1)
+    print(short_name.lower())
+    row = database.select(body='''SELECT * FROM file_sharing WHERE file_short_name=?''', args=(short_name,), number_of_data=1)
+    print(row)
     is_login = user_login()
-    if row[4]:
-        if is_login[0]:
-            return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
-        elif is_login == 'UserNotFound':
-            return url_for('login')
-
-    elif not row[4]:
+    if not row[4]:
         if not row[5]:
             return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
         elif row[5] != "" and request.args.get('password') != "":
@@ -409,6 +406,12 @@ def file_share(short_name=None):
                 return render_template('redirect/r-share-file-with-password.html', short_name=short_name)
         elif row[5] != "" and request.args.get('password') == "":
             return render_template('redirect/r-share-file-with-password.html', short_name=short_name)
+
+    elif row[4]:
+        if is_login[0]:
+            return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
+        elif is_login == 'UserNotFound':
+            return url_for('login')
 
 
 @app.route('/admin/show_share_file/')
@@ -602,4 +605,4 @@ def add_user_api():
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(port=4999, debug=True)
