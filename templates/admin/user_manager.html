@@ -31,8 +31,8 @@
         <tbody>
             {% for i in all_account%}
                 <tr>
-                    <td><a href="{{ url_for('admin_user_manager')+i[2] }}" style="text-decoration: None;">{{ i[0] }}</a></td>
-                    <td><a href="{{ url_for('admin_user_manager')+i[2] }}" style="text-decoration: None;">{{ i[2] }}</a></td>
+                    <td><a href="{{ url_for('admin_show_user')+i[2] }}" style="text-decoration: None;">{{ i[0] }}</a></td>
+                    <td><a href="{{ url_for('admin_show_user')+i[2] }}" style="text-decoration: None;">{{ i[2] }}</a></td>
                 </tr>
             {% endfor %}
         </tbody>

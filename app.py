@@ -346,6 +346,7 @@ def admin_home():
             return redirect(url_for('home'))
 
     except Exception as e:
+        print(e)
         make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
         return redirect(url_for('home'))
 
@@ -353,7 +354,7 @@ def admin_home():
 # Fonction permettant de visualiser les utilisateur de Cantina Cloud
 @app.route('/admin/usermanager/')
 @app.route('/admin/usermanager/<user_name>')
-def admin_user_manager(user_name=None):
+def admin_show_user(user_name=None):
     try:
         admin_and_login = user_login()
         if admin_and_login[0] and admin_and_login[1]:
@@ -370,6 +371,7 @@ def admin_user_manager(user_name=None):
         else:
             return redirect(url_for('home'))
     except Exception as e:
+        print(e)
         make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
         return redirect(url_for('home'))
 
@@ -401,7 +403,7 @@ def admin_add_user():
                     os.mkdir(dir_path + '/' + secure_filename(request.form['uname']))
                     make_log('add_user', request.remote_addr, request.cookies.get('userID'), 2,
                              'Created user token: ' + new_uuid)
-                    return redirect(url_for('admin_user_manager'))
+                    return redirect(url_for('admin_show_user'))
         else:
             return redirect(url_for('home'))
     except Exception as e:
