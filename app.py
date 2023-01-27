@@ -93,7 +93,6 @@ database.create_table("CREATE TABLE IF NOT EXISTS api_permission(token_api TEXT,
 # Fonction définissant la racine de Cantina Cloud
 @app.route('/')
 def home():
-    print("IP: "+request.environ.get('HTTP_X_FORWARDED_FOR'))
     if not request.cookies.get('userID'):
         return redirect(url_for('login'))
     data = database.select('''SELECT user_name, admin FROM user WHERE token = ?''', (request.cookies.get('userID'),), 1)

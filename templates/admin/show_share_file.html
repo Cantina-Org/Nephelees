@@ -2,15 +2,38 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <title>Cantina - Admin Show Log</title>
 </head>
 <body>
-    <h1>Hello {{ user_name[0] }}!</h1>
-    <h1><a href="{{ url_for('admin_home') }}">Cantina</a></h1><br>
+    <div class="has-text-centered">
+        <h1 class="is-size-1"><a href="{{ url_for('admin_home') }}">Cantina</a></h1><br>
+    </div>
     <hr style="height:25px; visibility:hidden;" />
-    {% for i in all_share_file %}
-        <li style="{% if i[0] % 2 == 0 %}background-color: lightblue;{% else %}background-color: black;{% endif %}">{{ i[0] }} - {{ i[1] }} - {{ i[2] }} - <a href="{{ url_for('file_share', short_name=i[3]) }}" target="_blank">{{ i[3] }}</a> - <a href="{{url_for('admin_show_share_file', randomName=i[3])}}">DELETE IT</a></li>
-    {% endfor %}
+    <ul>
+        <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
+            <thead>
+                <tr>
+                    <th class="is-size-5">ID</th>
+                    <th class="is-size-5">Nom du Fichier</th>
+                    <th class="is-size-5">Créateur du Fichier</th>
+                    <th class="is-size-5">Supprimez le partage</th>
+                </tr>
+            </thead>
+            <tbody>
+
+                    {% for i in all_share_file %}
+                        <tr>
+                            <td><a href="{{ url_for('file_share', short_name=i[3]) }}" target="_blank">{{ i[0] }}</a></td>
+                            <td><a href="{{ url_for('file_share', short_name=i[3]) }}" target="_blank">{{ i[1] }}</a></td>
+                            <td><a href="{{ url_for('file_share', short_name=i[3]) }}" target="_blank">{{ i[2] }}</a></td>
+                            <td><a href="{{url_for('admin_show_share_file', randomName=i[3])}}">Supprimez le partage</a></td>
+                        </tr>
+                    {% endfor %}
+            </tbody>
+        </table>
+    </ul>
 </body>
 </html>

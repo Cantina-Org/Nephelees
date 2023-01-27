@@ -1,24 +1,26 @@
 <!DOCTYPE html>
 <html lang="fr">
-    <head>
-        <meta charset="UTF-8">
-        <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
-        <title>Cantina - Login</title>
-    </head>
-   <body>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cantina - Login</title>
+</head>
+<body class="has-text-centered">
+    <h1 class="is-size-1">Login</h1><br>
+    <div class="columns is-vcentered is-centered" >
+    <form action = "{{ url_for('login') }}" method = "POST">
+        <h3 class="is-size-4">Nom d'utilisateur:</h3>
+        <label>
+            <input style="margin-bottom: 1em" class="input" type = 'text' name = 'nm' required/>
+        </label>
+        <h3 class="is-size-4">Mots de Passe:</h3>
+        <label>
+            <input style="margin-bottom: 1em" class="input" type = 'password' name = 'passwd' required/>
+        </label>
 
-      <form action = "{{ url_for('login') }}" method = "POST">
-         <p><h3>Enter userID</h3>
-          <p><label>
-              <input type = 'text' name = 'nm'/>
-          </label></p>
-         <p><label>
-             <input type = 'password' name = 'passwd'/>
-         </label></p>
-         <p><label>
-             <input type = 'submit' value = 'Login'/>
-         </label></p>
-      </form>
-
-   </body>
+        <button class="button is-primary" type="submit" >Se connecter</button>
+    </form>
+    </div>
+</body>
 </html>
