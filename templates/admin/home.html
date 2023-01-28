@@ -10,15 +10,13 @@
 <body>
     <div class="has-text-centered">
         <h1 class="is-size-1"><a href="{{ url_for('home') }}">Cantina</a></h1><br>
-        <h1 class="is-size-3">Hello {{ data[0][0] }}!</h1>
-    </div>    
-    
-    <p>Dans votre Cantina Cloud vous avez {{ file_number }} fichier ! <br>
-    La taille du dossier principale est de {{ main_folder_size }} !</p>
-
-    <a href="{{ url_for('admin_show_user') }}">User Manager</a><br>
-    <a href="{{ url_for('admin_api_manager') }}">API Manager</a><br>
-    <a href="{{ url_for('admin_show_log') }}">Show Log</a><br>
-    <a href="{{ url_for('admin_show_share_file') }}">Show Share Files</a>
+        <h1 class="is-size-3">Hello {{ data[0][0] }}!</h1><br>
+        <p class="is-size-5">Dans votre Cantina Cloud vous avez {{ file_number }} fichier ! <br>
+        La taille du dossier principale est de {{ main_folder_size }} !</p> <br>
+        <a class="is-size-4" href="{{ url_for('admin_show_user') }}">User Manager</a><br>
+        <a class="is-size-4" href="{{ url_for('admin_api_manager') }}">API Manager</a><br>
+        <a class="is-size-4" href="{{ url_for('admin_show_log') }}">Show Log</a><br>
+        <a class="is-size-4" href="{{ url_for('admin_show_share_file') }}">Show Share Files</a>
+    </div>
 </body>
 </html>

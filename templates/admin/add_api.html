@@ -2,36 +2,42 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <title>Cantina - Admin API Manager</title>
 </head>
 <body>
-    <h1><a href="{{ url_for('admin_home') }}">Cantina</a></h1><br>
-    <form action="{{ url_for('admin_add_api') }}" method="post">
-        <label>API Name: </label>
-        <label><input type="text" placeholder="Enter API Name" name="api-name" required></label><br>
-        <label>API Description: </label>
-        <label><input type="text" placeholder="Enter a description for the API" name="api-desc" required></label><br>
-        <label><h2>API Permission:</h2></label>
-        <label>Create File: </label>
-        <label><input type="checkbox" placeholder="Check if the API has the admin permission" name="api_create_file"></label><br>
-        <label>Upload File: </label>
-        <label><input type="checkbox" placeholder="Check if the API has the admin permission" name="api_upload_file"></label><br>
-        <label>Delete File: </label>
-        <label><input type="checkbox" placeholder="Check if the API has the admin permission" name="api_delete_file"></label><br>
-        <label>Create Folder: </label>
-        <label><input type="checkbox" placeholder="Check if the API has the admin permission" name="api_create_folder"></label><br>
-        <label>Delete Folder: </label>
-        <label><input type="checkbox" placeholder="Check if the API has the admin permission" name="api_delete_folder"></label><br>
-        <label>Share File And Folder: </label>
-        <label><input type="checkbox" placeholder="Check if the API has the admin permission" name="api_share_file_folder"></label><br>
-        <label>Delete Share File And Folder: </label>
-        <label><input type="checkbox" placeholder="Check if the API has the admin permission" name="api_delete_share_file_folder"></label><br>
-        <label>Create User: </label>
-        <label><input type="checkbox" placeholder="Check if the API has the admin permission" name="api_create_user"></label><br>
-        <label>Delete User: </label>
-        <label><input type="checkbox" placeholder="Check if the API has the admin permission" name="api_delete_user"></label><br>
-        <button type="submit">Submit User</button>
-    </form>
+    <div class="has-text-centered">
+        <h1 class="is-size-1"><a href="{{ url_for('admin_api_manager') }}">Cantina</a></h1><br>
+    </div>
+    <div class="has-text-centered columns is-centered is-vcentered">
+        <form action="{{ url_for('admin_add_api') }}" method="post">
+            <label class="is-size-4">API Name: </label>
+            <label><input class="input" type="text" placeholder="Enter API Name" name="api-name" required></label><br>
+            <label class="is-size-4">API Description: </label>
+            <label><input class="input" type="text" placeholder="Enter a description for the API" name="api-desc" required></label><br><br>
+            <label><h2 class="is-size-3">API Permission:</h2></label>
+            <label class="is-size-4">Create File: </label>
+            <label><input class="checkbox" type="checkbox" placeholder="Check if the API has the admin permission" name="api_create_file"></label><br>
+            <label class="is-size-4">Upload File: </label>
+            <label><input type="checkbox" placeholder="Check if the API has the admin permission" name="api_upload_file"></label><br>
+            <label class="is-size-4">Delete File: </label>
+            <label><input type="checkbox" placeholder="Check if the API has the admin permission" name="api_delete_file"></label><br>
+            <label class="is-size-4">Create Folder: </label>
+            <label><input type="checkbox" placeholder="Check if the API has the admin permission" name="api_create_folder"></label><br>
+            <label class="is-size-4">Delete Folder: </label>
+            <label><input type="checkbox" placeholder="Check if the API has the admin permission" name="api_delete_folder"></label><br>
+            <label class="is-size-4">Share File And Folder: </label>
+            <label><input type="checkbox" placeholder="Check if the API has the admin permission" name="api_share_file_folder"></label><br>
+            <label class="is-size-4">Delete Share File And Folder: </label>
+            <label><input type="checkbox" placeholder="Check if the API has the admin permission" name="api_delete_share_file_folder"></label><br>
+            <label class="is-size-4">Create User: </label>
+            <label><input type="checkbox" placeholder="Check if the API has the admin permission" name="api_create_user"></label><br>
+            <label class="is-size-4">Delete User: </label>
+            <label><input type="checkbox" placeholder="Check if the API has the admin permission" name="api_delete_user"></label><br>
+            <button type="submit">Submit User</button>
+        </form>
+    </div>
 </body>
 </html>
