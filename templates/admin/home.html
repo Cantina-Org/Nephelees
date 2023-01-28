@@ -2,13 +2,17 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <title>Cantina - Admin Home</title>
 </head>
 <body>
-    <h1><a href="{{ url_for('home') }}">Cantina</a></h1>
-    <h1>Hello {{ data[0][0] }}!</h1>
-
+    <div class="has-text-centered">
+        <h1 class="is-size-1"><a href="{{ url_for('home') }}">Cantina</a></h1><br>
+        <h1 class="is-size-3">Hello {{ data[0][0] }}!</h1>
+    </div>    
+    
     <p>Dans votre Cantina Cloud vous avez {{ file_number }} fichier ! <br>
     La taille du dossier principale est de {{ main_folder_size }} !</p>
 
