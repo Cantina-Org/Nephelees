@@ -29,7 +29,7 @@
                             <td><a href="{{ url_for('file_share', short_name=i[3]) }}" target="_blank">{{ i[0] }}</a></td>
                             <td><a href="{{ url_for('file_share', short_name=i[3]) }}" target="_blank">{{ i[1] }}</a></td>
                             <td><a href="{{ url_for('file_share', short_name=i[3]) }}" target="_blank">{{ i[2] }}</a></td>
-                            <td><a href="{{url_for('admin_show_share_file', randomName=i[3])}}">Supprimez le partage</a></td>
+                            <td><a href="{{url_for('admin_show_share_file')+i[3]}}">Supprimez le partage</a></td>
                         </tr>
                     {% endfor %}
             </tbody>

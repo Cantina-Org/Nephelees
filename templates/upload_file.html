@@ -3,14 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Cantina Cloud - Upload File</title>
 </head>
 <body>
-    <h1><a href="{{ url_for('file') }}">Cantina</a></h1><br>
-    <form action = "{{ url_for('upload_file', path=request.args.get('path')) }}" method = "POST"
-         enctype = "multipart/form-data">
-         <input type = "file" name = "file" />
-         <input type = "submit"/>
-      </form>
+    <div class="has-text-centered">
+        <h1 class="is-size-1"><a href="{{ url_for('file') }}">Cantina</a></h1><br>
+
+        <form action = "{{ url_for('upload_file', path=request.args.get('path')) }}" method = "POST" enctype = "multipart/form-data">
+             <div class="file is-link is-centered">
+                 <label class="file-label">
+                     <input class="file-input" type="file" name="file">
+                     <span class="file-cta">
+                         <span class="file-label">
+                         Choose a file…
+                         </span>
+                     </span>
+                 </label>
+             </div><br>
+             <input class="button is-primary" type="submit"/>
+        </form>
+    </div>
 </body>
 </html>

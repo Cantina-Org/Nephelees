@@ -42,8 +42,8 @@ def user_login():
             return True, False
         else:
             return False, False
-    except:
-        return 'UserNotFound'
+    except Exception as e:
+        return e
 
 
 def make_log(action_name, user_ip, user_token, log_level, argument=None, content=None):
@@ -76,7 +76,7 @@ database.connection()
 
 # Creation des tables de la base donnée
 database.create_table("CREATE TABLE IF NOT EXISTS user(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
-                      "user_name TEXT, password TEXT, admin BOOL, work_Dir TEXT, online BOOL, last_online TEXT)")
+                      "user_name TEXT, password TEXT, admin BOOL, work_Dir TEXT, last_online TEXT)")
 database.create_table("CREATE TABLE IF NOT EXISTS log(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, name TEXT, "
                       "user_ip text, user_token TEXT, argument TEXT, log_level INT, "
                       "date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
@@ -275,7 +275,8 @@ def download_file():
 @app.route('/file_share/<short_name>')
 def file_share(short_name=None):
     print(short_name.lower())
-    row = database.select(body='''SELECT * FROM file_sharing WHERE file_short_name=?''', args=(short_name,), number_of_data=1)
+    row = database.select(body='''SELECT * FROM file_sharing WHERE file_short_name=?''', args=(short_name,),
+                          number_of_data=1)
     print(row)
     is_login = user_login()
     if not row[4]:
@@ -440,9 +441,10 @@ def admin_show_share_file(random_name=None):
             if random_name:
                 row = database.select('''SELECT file_name, file_owner FROM file_sharing WHERE file_short_name=?''',
                                       (random_name,), 1)
-                os.remove(share_path + row[1] + '/' + row[0])
+                os.remove(share_path + '/' + row[1] + '/' + row[0])
                 database.insert('''DELETE FROM file_sharing WHERE file_short_name = ?;''', (random_name,))
         except Exception as e:
+            print(e)
             make_log('error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
         all_share_file = database.select('''SELECT * FROM file_sharing''')
         return render_template('admin/show_share_file.html', user_name=user_name, all_share_file=all_share_file)
@@ -623,8 +625,9 @@ def add_user_api():
 
 
 @app.errorhandler(404)
-def page_not_found(error):
+def page_not_found():
     return render_template('error/404.html'), 404
+
 
 if __name__ == '__main__':
     app.run()
