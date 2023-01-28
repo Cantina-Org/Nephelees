@@ -76,7 +76,7 @@ database.connection()
 
 # Creation des tables de la base donnée
 database.create_table("CREATE TABLE IF NOT EXISTS user(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
-                      "user_name TEXT, password TEXT, admin BOOL, work_Dir TEXT, online BOOL, last_online TEXT)")
+                      "user_name TEXT, password TEXT, admin BOOL, work_Dir TEXT, last_online TEXT)")
 database.create_table("CREATE TABLE IF NOT EXISTS log(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, name TEXT, "
                       "user_ip text, user_token TEXT, argument TEXT, log_level INT, "
                       "date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
