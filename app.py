@@ -93,7 +93,6 @@ database.create_table("CREATE TABLE IF NOT EXISTS api_permission(token_api TEXT,
 # Fonction définissant la racine de Cantina Cloud
 @app.route('/')
 def home():
-    print("IP: "+request.environ.get('HTTP_X_FORWARDED_FOR'))
     if not request.cookies.get('userID'):
         return redirect(url_for('login'))
     data = database.select('''SELECT user_name, admin FROM user WHERE token = ?''', (request.cookies.get('userID'),), 1)
@@ -347,6 +346,7 @@ def admin_home():
             return redirect(url_for('home'))
 
     except Exception as e:
+        print(e)
         make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
         return redirect(url_for('home'))
 
@@ -354,7 +354,7 @@ def admin_home():
 # Fonction permettant de visualiser les utilisateur de Cantina Cloud
 @app.route('/admin/usermanager/')
 @app.route('/admin/usermanager/<user_name>')
-def admin_user_manager(user_name=None):
+def admin_show_user(user_name=None):
     try:
         admin_and_login = user_login()
         if admin_and_login[0] and admin_and_login[1]:
@@ -371,6 +371,7 @@ def admin_user_manager(user_name=None):
         else:
             return redirect(url_for('home'))
     except Exception as e:
+        print(e)
         make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
         return redirect(url_for('home'))
 
@@ -402,7 +403,7 @@ def admin_add_user():
                     os.mkdir(dir_path + '/' + secure_filename(request.form['uname']))
                     make_log('add_user', request.remote_addr, request.cookies.get('userID'), 2,
                              'Created user token: ' + new_uuid)
-                    return redirect(url_for('admin_user_manager'))
+                    return redirect(url_for('admin_show_user'))
         else:
             return redirect(url_for('home'))
     except Exception as e:
@@ -626,4 +627,4 @@ def page_not_found(error):
     return render_template('error/404.html'), 404
 
 if __name__ == '__main__':
-    app.run()
+    app.run(port=4999, debug=True)

@@ -2,15 +2,41 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <title>Cantina - Admin User Manager</title>
 </head>
 <body>
-    <h1><a href="{{ url_for('admin_home') }}">Cantina</a></h1><br>
-    <button onclick="window.location.href='{{ url_for('admin_add_api') }}'"><img src="https://img.icons8.com/ios/50/null/add-link.png" alt="Une Personne avec un plus pour ajouter un utilisateur"/></button>
+    <div class="has-text-centered">
+        <h1 class="is-size-1"><a href="{{ url_for('admin_home') }}">Cantina</a></h1><br>
+    </div>
+    <div class="is-centered">
+        <button class="button is-primary" onclick="window.location.href='{{ url_for('admin_add_api') }}'">
+            <span class="icon is-normal" >
+                <i><img src="https://img.icons8.com/ios/50/null/add-link.png" alt="Une Personne avec un plus pour ajouter un utilisateur"/></i>
+            </span>
+            <span>Ajouter un utilisateur</span>
+        </button>
+    </div>
     <hr style="height:25px; visibility:hidden;" />
-    {% for i in api%}
-        <li style="{% if i[0] % 2 == 0 %}background-color: lightblue;{% else %}background-color: black;{% endif %}"><a href="{{ url_for('admin_api_manager')+i[0]|string }}" style="text-decoration: None; {% if i[0] % 2 == 0 %}color: black;{% else %}color: lightblue;{% endif %}">{{ i[2] }}</a></li>
-    {% endfor %}
+    <ul>
+        <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
+            <thead>
+                <tr>
+                    <th class="is-size-5">ID</th>
+                    <th class="is-size-5">Nom</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for i in api%}
+                    <tr>
+                        <td><a href="{{ url_for('admin_api_manager')+i[0]|string }}">{{ i[0] }}</a></td>
+                        <td><a href="{{ url_for('admin_api_manager')+i[0]|string }}">{{ i[2] }}</a></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </ul>
 </body>
 </html>

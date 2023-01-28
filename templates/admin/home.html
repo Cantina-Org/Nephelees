@@ -2,19 +2,21 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <title>Cantina - Admin Home</title>
 </head>
 <body>
-    <h1><a href="{{ url_for('home') }}">Cantina</a></h1>
-    <h1>Hello {{ data[0][0] }}!</h1>
-
-    <p>Dans votre Cantina Cloud vous avez {{ file_number }} fichier ! <br>
-    La taille du dossier principale est de {{ main_folder_size }} !</p>
-
-    <a href="{{ url_for('admin_user_manager') }}">User Manager</a><br>
-    <a href="{{ url_for('admin_api_manager') }}">API Manager</a><br>
-    <a href="{{ url_for('admin_show_log') }}">Show Log</a><br>
-    <a href="{{ url_for('admin_show_share_file') }}">Show Share Files</a>
+    <div class="has-text-centered">
+        <h1 class="is-size-1"><a href="{{ url_for('home') }}">Cantina</a></h1><br>
+        <h1 class="is-size-3">Hello {{ data[0][0] }}!</h1><br>
+        <p class="is-size-5">Dans votre Cantina Cloud vous avez {{ file_number }} fichier ! <br>
+        La taille du dossier principale est de {{ main_folder_size }} !</p> <br>
+        <a class="is-size-4" href="{{ url_for('admin_show_user') }}">User Manager</a><br>
+        <a class="is-size-4" href="{{ url_for('admin_api_manager') }}">API Manager</a><br>
+        <a class="is-size-4" href="{{ url_for('admin_show_log') }}">Show Log</a><br>
+        <a class="is-size-4" href="{{ url_for('admin_show_share_file') }}">Show Share Files</a>
+    </div>
 </body>
 </html>
