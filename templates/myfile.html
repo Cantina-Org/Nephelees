@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<!--https://bulma.io/documentation/components/panel/ -->
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <title>Cantina Cloud - My file</title>
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="{{ url_for('static', filename="delete_file.js") }}"></script>
     <script src="{{ url_for('static', filename="delete_folder.js") }}"></script>
     <script src="{{ url_for('static', filename="create_folder.js") }}"></script>
@@ -13,24 +14,41 @@
     <script src="{{ url_for('static', filename="share_folder.js") }}"></script>
 </head>
 <body>
-    <h1><a href="{{ url_for('home') }}">Cantina</a></h1><br>
-    <button type = "button" onclick="window.location.href='{{ url_for('upload_file', path=path) }}'">Upload File</button>
-    <button onclick="create_file('{{ path }}')">Create file</button>
-    <button onclick="create_folder('{{ path }}')">Create Folder</button>
-    <a href="{{ url_for('file', path=lastPath) }}">..</a>
-    {% for item in dir %}
-        <li><a href={{ url_for('file', path=path+item+'/') }}>{{ item }}</a></li>
-        <button onclick="delete_folder('{{ path }}', '{{ item }}')"><img src="https://img.icons8.com/ios/50/null/trash--v1.png" alt="Une poubelle pour supprimer ce dossier"/></button>
-        <button onclick="share_folder('{{ path }}', '{{ item }}')"><img src="https://img.icons8.com/ios/50/null/link--v1.png" alt="Une poubelle pour supprimer ce dossier"/></button>
+    <div class="has-text-centered">
+        <h1 class="is-size-1"><a href="{{ url_for('home') }}">Cantina</a></h1><br>
+    </div>
+    <article class="panel is-primary has-text-centered">
+        <p class="panel-heading">
+            Mes Fichiers
+        </p>
+        <p style="margin-top: 15px; padding-bottom: 15px;" class="panel-tabs has-text-centerd">
+            <button style="margin-left: 15px" class="button is-primary is-outlined" type="button" onclick="window.location.href='{{ url_for('upload_file', path=path) }}'">Upload File</button>
+            <button style="margin-left: 15px" class="button is-primary is-outlined" onclick="create_file('{{ path }}')">Create file</button>
+            <button style="margin-left: 15px" class="button is-primary is-outlined" onclick="create_folder('{{ path }}')">Create Folder</button>
+            <a style="margin-left: 15px" class="button is-primary is-outlined" href="{{ url_for('file', path=lastPath) }}">..</a>
+        </p>
+        {% for item in dir %}
+            <a class="panel-block is-active has-text-centered" href={{ url_for('file', path=path+item+'/') }}>
+                <span class="icon is-left">
+                    <img src="https://img.icons8.com/ios/50/null/folder-invoices--v1.png"/>
+                </span>
+                <p style="margin-left: 15px">{{ item }}</p>
+                <button class="button is-danger"  style="margin-left: 15px" onclick="delete_folder('{{ path }}', '{{ item }}')"><img style="height: auto; width: 75%;" src="https://img.icons8.com/ios/50/null/trash--v1.png" alt="Une poubelle pour supprimer ce dossier"/></button>
+                <button class="button is-primary" style="margin-left: 15px" onclick="share_folder('{{ path }}', '{{ item }}')"><img style="height: auto; width: 75%;" src="https://img.icons8.com/ios/50/null/link--v1.png" alt="Une poubelle pour supprimer ce dossier"/></button>
+            </a>
+        {% endfor %}
+        {% for item in file %}
+        <a class="panel-block is-active" >
+            <span class="icon is-left">
+                <img src="https://img.icons8.com/ios/50/null/file--v1.png"/>
+            </span>
+            <p style="margin-left: 15px">{{ item }}</p>
+            <button class="button is-danger" style="margin-left: 15px" onclick="delete_file('{{ path }}', '{{ item }}')"><img style="height: auto; width: 75%;" src="https://img.icons8.com/ios/50/null/trash--v1.png" alt="Une poubelle pour supprimer ce fichier"/></button>
+            <button class="button is-primary" style="margin-left: 15px" onclick="window.location.href='{{ url_for('download_file', path=path, item=item) }}'"><img style="height: auto; width: 75%;" src="https://img.icons8.com/ios/50/null/download-from-cloud--v1.png" alt="Un nuage avec une flèche qui descends pour télécharger le fichier"/></button>
+            <button class="button is-primary" style="margin-left: 15px" onclick="share_file('{{ path }}', '{{ item }}'); "><img style="height: auto; width: 75%;"  src="https://img.icons8.com/ios/50/null/link--v1.png" alt="Une poubelle pour supprimer ce fichier"/></button>
+        </a>
     {% endfor %}
-    <br><br><br>
-    {% for item in file %}
-        <div>
-            <li style="display: inline-block;">{{ item }}</li>
-            <button onclick="delete_file('{{ path }}', '{{ item }}')"><img src="https://img.icons8.com/ios/50/null/trash--v1.png" alt="Une poubelle pour supprimer ce fichier"/></button>
-            <button onclick="window.location.href='{{ url_for('download_file', path=path, item=item) }}'"><img src="https://img.icons8.com/ios/50/null/download-from-cloud--v1.png" alt="Un nuage avec une flèche qui descends pour télécharger le fichier"/></button>
-            <button onclick="share_file('{{ path }}', '{{ item }}'); "><img src="https://img.icons8.com/ios/50/null/link--v1.png" alt="Une poubelle pour supprimer ce fichier"/></button>
-        </div>
-    {% endfor %}
+    </article>
+    <br>
 </body>
 </html>
