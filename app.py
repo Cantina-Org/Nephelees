@@ -440,9 +440,10 @@ def admin_show_share_file(random_name=None):
             if random_name:
                 row = database.select('''SELECT file_name, file_owner FROM file_sharing WHERE file_short_name=?''',
                                       (random_name,), 1)
-                os.remove(share_path + row[1] + '/' + row[0])
+                os.remove(share_path +'/' + row[1] + '/' + row[0])
                 database.insert('''DELETE FROM file_sharing WHERE file_short_name = ?;''', (random_name,))
         except Exception as e:
+            print(e)
             make_log('error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
         all_share_file = database.select('''SELECT * FROM file_sharing''')
         return render_template('admin/show_share_file.html', user_name=user_name, all_share_file=all_share_file)
