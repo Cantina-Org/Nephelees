@@ -462,9 +462,7 @@ def admin_api_manager(api_id=None):
             return render_template('admin/specific_api_manager.html', api=api[0])
         else:
             api = database.select('''SELECT * FROM api''')
-            user_name = database.select('''SELECT user_name FROM user WHERE token=?''',
-                                        (request.cookies.get('userID'),))
-            return render_template('admin/api_manager.html', user_name=user_name, api=api)
+            return render_template('admin/api_manager.html', api=api)
     else:
         make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2)
         return redirect(url_for('home'))

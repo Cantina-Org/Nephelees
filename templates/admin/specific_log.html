@@ -2,23 +2,38 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
-    <style>
-        a#gras {
-            text-decoration: underline;
-            font-weight: bold;
-        }
-    </style>
     <title>Cantina - Admin User Manager</title>
 </head>
 <body>
-    <h1><a href="{{ url_for('admin_show_log') }}">Cantina</a></h1><br>
-    <a id="gras">ID:</a> {{ log[0] }}<br>
-    <a id="gras">Name:</a> {{ log[1] }}<br>
-    <a id="gras">User Adresse IP:</a> {{ log[2] }}<br>
-    <a id="gras">User Token:</a> {{ log[3] }}<br>
-    <a id="gras">Argument:</a> {{ log[4] }}<br>
-    <a id="gras">Log Level:</a> {{ log[5] }}<br>
-    <a id="gras">Date:</a> {{ log[6] }}
+    <div class="has-text-centered">
+        <h1 class="is-size-1"><a href="{{ url_for('admin_show_log') }}">Cantina</a></h1><br>
+    </div>
+    <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
+        <thead>
+            <tr>
+                <th class="is-size-5">ID</th>
+                <th class="is-size-5">Nom</th>
+                <th class="is-size-5">Adresse IP de l'utilisateur</th>
+                <th class="is-size-5">Token de l'utilisateur</th>
+                <th class="is-size-5">Argument</th>
+                <th class="is-size-5">Niveau</th>
+                <th class="is-size-5">Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ log[0] }}</td>
+                <td>{{ log[1] }}</td>
+                <td>{{ log[2] }}</td>
+                <td>{{ log[3] }}</td>
+                <td>{{ log[4] }}</td>
+                <td>{{ log[5] }}</td>
+                <td>{{ log[6] }}</td>
+            </tr>
+        </tbody>
+    </table>
 </body>
 </html>

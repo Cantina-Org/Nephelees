@@ -3,22 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
-    <style>
-        a#gras {
-            text-decoration: underline;
-            font-weight: bold;
-            color: black;
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Cantina - Admin User Manager</title>
 </head>
 <body>
-    <h1><a href="{{ url_for('admin_show_user') }}">Cantina</a></h1><br>
-    <a id="gras">ID:</a> {{ user_account[0] }}<br>
-    <a id="gras">Token:</a> {{ user_account[1] }}<br>
-    <a id="gras">Name:</a> {{ user_account[2] }}<br>
-    <a id="gras">Is Admin :</a> {% if user_account[4] %}True{% else %}False{% endif %}<br>
-    <a id="gras">Last Online: </a> {{ user_account[7] }}<br>
-    <a id="gras">Working Directory:</a> {{ user_account[5]}}
+    <div class="has-text-centered">
+        <h1 class="is-size-1"><a href="{{ url_for('admin_show_user') }}">Cantina</a></h1><br>
+    </div>
+    <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
+        <thead>
+            <tr>
+                <th class="is-size-5">ID</th>
+                <th class="is-size-5">Token</th>
+                <th class="is-size-5">Nom</th>
+                <th class="is-size-5">Administrateur</th>
+                <th class="is-size-5">Dernière connexion</th>
+                <th class="is-size-5">Espace de travail</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ user_account[0] }}</td>
+                <td>{{ user_account[1] }}</td>
+                <td>{{ user_account[2] }}</td>
+                <td>{% if user_account[4] %}Oui{% else %}Non{% endif %}</td>
+                <td>{{ user_account[7] }}</td>
+                <td>{{ user_account[5] }}</td>
+            </tr>
+        </tbody>
+    </table>
 </body>
 </html>
