@@ -44,7 +44,10 @@ while not conf1:
     db_name = input("  Nom de la base de donnée: ")
     db_passw = input("  Mot de passe de la base de donnée: ")
     db_uname = input("  Nom d'utilisateur de la base de donnée: ")
+    print("Configuration de Cantina")
+    port = input("  Port de Cantina: ")
     confirm = input("Confirmez vous les données ci-dessus? ")
+
     if confirm == "yes" or confirm == "oui" or confirm == "y" or confirm == "o":
         if not username or not mdp or not db_uname or not db_name or not db_passw:
             conf1 = False
@@ -73,7 +76,8 @@ cursor.execute(f'''INSERT INTO user(token, user_name, password, admin, work_Dir)
 con.commit()
 os.system("mkdir /home/cantina/cloud/file_cloud/matbe /home/cantina/cloud/share/matbe")
 
-json_data = {"database_username": db_uname, "database_password": db_passw, "database_name": db_name}
+json_data = {"database": {"database_username": db_uname, "database_password": db_passw, "database_name": db_name},
+             "server": {"port": 5000}}
 with open("/home/cantina/cloud/config.json", "w") as outfile:
     outfile.write(json.dumps(json_data, indent=4))
 
@@ -93,5 +97,5 @@ os.system("systemctl start cantina")
 
 print("---------------------------------------------------------------------------------------------------------------")
 os.system("rm /home/cantina/cloud/installer.py")
-print("Nous venons de finir l'instalation de Cantina! Vous pouvez maintenant sur https://127.0.0.1:5000/  pour pouvoir "
-      "continuer l'installation de Cantina")
+print("Nous venons de finir l'instalation de Cantina! Vous pouvez maintenant configurer votre serveur web pour qu'il "
+      "pointe sur l'ip 127.0.0.1:{}!".format(port))
