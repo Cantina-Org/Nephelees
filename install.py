@@ -88,9 +88,7 @@ ExecStart=python3 app.py
 [Install]
 WantedBy=multi-user.target' >> /etc/systemd/system/cantina.service""")
 os.system('chown cantina /home/cantina/*/*/* && chgrp cantina /home/cantina/*/*/*')
-# if launch_startup == "yes" or launch_startup == "oui" or launch_startup == "y" or launch_startup == "o":
-#     os.system("systemctl enable cantina")
-
+os.system("systemctl enable cantina")
 os.system("systemctl start cantina")
 
 print("---------------------------------------------------------------------------------------------------------------")
