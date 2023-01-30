@@ -103,6 +103,254 @@ def home():
 
 
 # Fonction permettant de voire les fichiers de Cantina Cloud
+@app.route('/my/file/upload', methods=['GET', 'POST'])
+def upload_file():
+    args = request.args
+
+    if request.method == 'GET':
+        return render_template('upload_file.html')
+
+    elif request.method == 'POST':
+        user_token = request.cookies.get('userID')
+        user_check = user_login()
+
+        if user_check == 'UserNotFound':
+            return redirect(url_for('login'))
+        elif user_check[1]:
+            f = request.files['file']
+            f.save(os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
+            make_log('upload_file', request.remote_addr, request.cookies.get('userID'), 1,
+                     os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
+            return redirect(url_for('file', path=args.get('path')))
+        elif not user_check[1]:
+            f = request.files['file']
+            f.save(os.path.join(dir_path + '/' + f_user_name(user_token) + args.get('path'),
+                                secure_filename(f.filename)))
+            make_log('upload_file', request.remote_addr, request.cookies.get('userID'), 1,
+                     os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
+            return redirect(url_for('file', path=args.get('path')))
+
+
+# Fonction permettant d'upload un fichier dans le dossier dans lequelle on est
+@app.route('/my/file/download')
+def download_file():
+    args = request.args
+
+    user_token = request.cookies.get('userID')
+    user_check = user_login()
+
+    make_log('Download file', request.remote_addr, request.cookies.get('userID'), 1,
+             dir_path + args.get('path') + args.get('item'))
+    if user_check == 'UserNotFound':
+        return redirect(url_for('login'))
+    elif user_check[1]:
+        return send_from_directory(directory=dir_path + args.get('path'), path=args.get('item'))
+    elif not user_check[1]:
+        return send_from_directory(directory=dir_path + '/' + f_user_name(user_token) + args.get('path'),
+                                   path=args.get('item'))
+
+
+# Fonction permettant de télécharger le fichier sélectionné
+@app.route('/file_share/<short_name>')
+def file_share(short_name=None):
+    print(short_name.lower())
+    row = database.select(body='''SELECT * FROM file_sharing WHERE file_short_name=?''', args=(short_name,),
+                          number_of_data=1)
+    print(row)
+    is_login = user_login()
+    if not row[4]:
+        if not row[5]:
+            return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
+        elif row[5] != "" and request.args.get('password') != "":
+            if hash_perso(request.args.get('password')) == row[5]:
+                return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
+            else:
+                return render_template('redirect/r-share-file-with-password.html', short_name=short_name)
+        elif row[5] != "" and request.args.get('password') == "":
+            return render_template('redirect/r-share-file-with-password.html', short_name=short_name)
+
+    elif row[4]:
+        if is_login[0]:
+            return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
+        elif is_login == 'UserNotFound':
+            return url_for('login')
+
+
+# Fonction permettant de voire les fichiers partagé
+@app.route('/login', methods=['POST', 'GET'])
+def login():
+    if request.method == 'POST':
+        user = request.form['nm']
+        passwd = request.form['passwd']
+        row = database.select(f'''SELECT user_name, password, token FROM user WHERE password = ? AND user_name = ?''',
+                              (hash_perso(passwd), user), 1)
+
+        try:
+            make_log('login', request.remote_addr, row[2], 1)
+            resp = make_response(redirect(url_for('home')))
+            resp.set_cookie('userID', row[2])
+            database.insert(f'''UPDATE user SET last_online=? WHERE token=?''', (datetime.datetime.now(), row[2]))
+            return resp
+        except Exception as e:
+            print(e)
+            return redirect(url_for("home"))
+
+    elif request.method == 'GET':
+        return render_template('login.html')
+
+
+# Fonction permettant de se connecter à Cantina Cloud
+@app.route('/logout', methods=['POST', 'GET'])
+def logout():
+    make_log('logout', request.remote_addr, request.cookies.get('userID'), 1)
+    resp = make_response(redirect(url_for('home')))
+    resp.set_cookie('userID', '', expires=0)
+    return resp
+
+
+# Fonction permettant de se déconnecter de Cantina Cloud
+@app.route('/admin/home')
+def admin_home():
+    try:
+        count = 0
+        admin_and_login = user_login()
+        if admin_and_login[0] and admin_and_login[1]:
+            for root_dir, cur_dir, files in os.walk(dir_path):
+                count += len(files)
+            main_folder_size = subprocess.check_output(['du', '-sh', dir_path]).split()[0].decode('utf-8')
+            user_name = database.select('''SELECT user_name FROM user WHERE token=?''',
+                                        (request.cookies.get('userID'),))
+            return render_template('admin/home.html', data=user_name, file_number=count,
+                                   main_folder_size=main_folder_size)
+        else:
+            return redirect(url_for('home'))
+
+    except Exception as e:
+        print(e)
+        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
+        return redirect(url_for('home'))
+
+
+# Fonction permettant de voire la page 'principale' du panel Admin de Cantina Cloud 
+@app.route('/admin/usermanager/')
+@app.route('/admin/usermanager/<user_name>')
+def admin_show_user(user_name=None):
+    try:
+        admin_and_login = user_login()
+        if admin_and_login[0] and admin_and_login[1]:
+            if user_name:
+                user_account = database.select('''SELECT * FROM user WHERE user_name=?''', (user_name,))
+
+                return render_template('admin/specific_user_manager.html', user_account=user_account[0])
+            else:
+                all_account = database.select(body='''SELECT * FROM user''', number_of_data=0)
+                user_name = database.select('''SELECT user_name FROM user WHERE token=?''',
+                                            (request.cookies.get('userID'),))
+                return render_template('admin/user_manager.html', user_name=user_name,
+                                       all_account=all_account)
+        else:
+            return redirect(url_for('home'))
+    except Exception as e:
+        print(e)
+        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
+        return redirect(url_for('home'))
+
+
+# Fonction permettant de visualiser les utilisateur de Cantina Cloud
+@app.route('/admin/add_user/', methods=['POST', 'GET'])
+def admin_add_user():
+    try:
+        admin_and_login = user_login()
+        if admin_and_login[0] and admin_and_login[1]:
+            if request.method == 'GET':
+                user_name = database.select('''SELECT user_name FROM user WHERE token=?''',
+                                            (request.cookies.get('userID'),))
+                return render_template('admin/add_user.html', user_name=user_name)
+            elif request.method == 'POST':
+                if request.form['pword1'] == request.form['pword2']:
+                    try:
+                        if request.form['admin'] == 'on':
+                            admin = True
+                        else:
+                            admin = False
+                    except Exception as e:
+                        print(e)
+                        admin = False
+                    new_uuid = str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())))
+                    database.insert('''INSERT INTO user(token, user_name, password, admin, work_Dir) VALUES (?, ?, ?, 
+                            ?, ?)''', (new_uuid, request.form['uname'], hash_perso(request.form['pword2']), admin,
+                                       dir_path + '/' + secure_filename(request.form['uname'])))
+                    os.mkdir(dir_path + '/' + secure_filename(request.form['uname']))
+                    make_log('add_user', request.remote_addr, request.cookies.get('userID'), 2,
+                             'Created user token: ' + new_uuid)
+                    return redirect(url_for('admin_show_user'))
+        else:
+            return redirect(url_for('home'))
+    except Exception as e:
+        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
+        return redirect(url_for('home'))
+
+
+# Fonction permettant de créer un utilisateur
+@app.route('/admin/show_log/')
+@app.route('/admin/show_log/<log_id>')
+def admin_show_log(log_id=None):
+    try:
+        admin_and_login = user_login()
+        if admin_and_login[0] and admin_and_login[1]:
+            if log_id:
+                log = database.select('''SELECT * FROM log WHERE ID=?''', (log_id,), 1)
+                return render_template('admin/specific_log.html', log=log)
+            else:
+                all_log = database.select('''SELECT * FROM log''')
+                return render_template('admin/show_log.html', all_log=all_log)
+    except Exception as e:
+        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
+        return redirect(url_for('home'))
+
+
+# Fonction permettant de voire les logs générer par Cantina Cloud
+@app.route('/admin/show_share_file/')
+@app.route('/admin/show_share_file/<random_name>')
+def admin_show_share_file(random_name=None):
+    admin_and_login = user_login()
+    if admin_and_login[0] and admin_and_login[1]:
+        user_name = database.select('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),), 1)
+        try:
+            if random_name:
+                row = database.select('''SELECT file_name, file_owner FROM file_sharing WHERE file_short_name=?''',
+                                      (random_name,), 1)
+                os.remove(share_path + '/' + row[1] + '/' + row[0])
+                database.insert('''DELETE FROM file_sharing WHERE file_short_name = ?;''', (random_name,))
+        except Exception as e:
+            print(e)
+            make_log('error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
+        all_share_file = database.select('''SELECT * FROM file_sharing''')
+        return render_template('admin/show_share_file.html', user_name=user_name, all_share_file=all_share_file)
+
+    else:
+        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2)
+        return redirect(url_for('home'))
+
+
+# Fonction permettant de voire tout les fichiers partagé
+@app.route('/admin/api_manager/')
+@app.route('/admin/api_manager/<api_id>')
+def admin_api_manager(api_id=None):
+    admin_and_login = user_login()
+    if admin_and_login[0] and admin_and_login[1]:
+        if api_id:
+            api = database.select('''SELECT * FROM api WHERE ID=?''', (api_id,))
+            return render_template('admin/specific_api_manager.html', api=api[0])
+        else:
+            api = database.select('''SELECT * FROM api''')
+            return render_template('admin/api_manager.html', api=api)
+    else:
+        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2)
+        return redirect(url_for('home'))
+
+
+# Fonction permettant de voire les API créer sur Cantina Cloud
 @app.route('/my/file/')
 def file():
     global filenames, lastPath, fd
@@ -218,254 +466,6 @@ def file():
     else:
         return render_template('myfile.html', dir=work_dir, file=work_file_in_dir, path=args.get('path') + "/",
                                lastPath=lastPath)
-
-
-# Fonction permettant d'upload un fichier dans le dossier dans lequelle on est
-@app.route('/my/file/upload', methods=['GET', 'POST'])
-def upload_file():
-    args = request.args
-
-    if request.method == 'GET':
-        return render_template('upload_file.html')
-
-    elif request.method == 'POST':
-        user_token = request.cookies.get('userID')
-        user_check = user_login()
-
-        if user_check == 'UserNotFound':
-            return redirect(url_for('login'))
-        elif user_check[1]:
-            f = request.files['file']
-            f.save(os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
-            make_log('upload_file', request.remote_addr, request.cookies.get('userID'), 1,
-                     os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
-            return redirect(url_for('file', path=args.get('path')))
-        elif not user_check[1]:
-            f = request.files['file']
-            f.save(os.path.join(dir_path + '/' + f_user_name(user_token) + args.get('path'),
-                                secure_filename(f.filename)))
-            make_log('upload_file', request.remote_addr, request.cookies.get('userID'), 1,
-                     os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
-            return redirect(url_for('file', path=args.get('path')))
-
-
-# Fonction permettant de télécharger le fichier sélectionné
-@app.route('/my/file/download')
-def download_file():
-    args = request.args
-
-    user_token = request.cookies.get('userID')
-    user_check = user_login()
-
-    make_log('Download file', request.remote_addr, request.cookies.get('userID'), 1,
-             dir_path + args.get('path') + args.get('item'))
-    if user_check == 'UserNotFound':
-        return redirect(url_for('login'))
-    elif user_check[1]:
-        return send_from_directory(directory=dir_path + args.get('path'), path=args.get('item'))
-    elif not user_check[1]:
-        return send_from_directory(directory=dir_path + '/' + f_user_name(user_token) + args.get('path'),
-                                   path=args.get('item'))
-
-
-# Fonction permettant de voire les fichiers partagé
-@app.route('/file_share/<short_name>')
-def file_share(short_name=None):
-    print(short_name.lower())
-    row = database.select(body='''SELECT * FROM file_sharing WHERE file_short_name=?''', args=(short_name,),
-                          number_of_data=1)
-    print(row)
-    is_login = user_login()
-    if not row[4]:
-        if not row[5]:
-            return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
-        elif row[5] != "" and request.args.get('password') != "":
-            if hash_perso(request.args.get('password')) == row[5]:
-                return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
-            else:
-                return render_template('redirect/r-share-file-with-password.html', short_name=short_name)
-        elif row[5] != "" and request.args.get('password') == "":
-            return render_template('redirect/r-share-file-with-password.html', short_name=short_name)
-
-    elif row[4]:
-        if is_login[0]:
-            return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
-        elif is_login == 'UserNotFound':
-            return url_for('login')
-
-
-# Fonction permettant de se connecter à Cantina Cloud
-@app.route('/login', methods=['POST', 'GET'])
-def login():
-    if request.method == 'POST':
-        user = request.form['nm']
-        passwd = request.form['passwd']
-        row = database.select(f'''SELECT user_name, password, token FROM user WHERE password = ? AND user_name = ?''',
-                              (hash_perso(passwd), user), 1)
-
-        try:
-            make_log('login', request.remote_addr, row[2], 1)
-            resp = make_response(redirect(url_for('home')))
-            resp.set_cookie('userID', row[2])
-            database.insert(f'''UPDATE user SET last_online=? WHERE token=?''', (datetime.datetime.now(), row[2]))
-            return resp
-        except Exception as e:
-            print(e)
-            return redirect(url_for("home"))
-
-    elif request.method == 'GET':
-        return render_template('login.html')
-
-
-# Fonction permettant de se déconnecter de Cantina Cloud
-@app.route('/logout', methods=['POST', 'GET'])
-def logout():
-    make_log('logout', request.remote_addr, request.cookies.get('userID'), 1)
-    resp = make_response(redirect(url_for('home')))
-    resp.set_cookie('userID', '', expires=0)
-    return resp
-
-
-# Fonction permettant de voire la page 'principale' du panel Admin de Cantina Cloud 
-@app.route('/admin/home')
-def admin_home():
-    try:
-        count = 0
-        admin_and_login = user_login()
-        if admin_and_login[0] and admin_and_login[1]:
-            for root_dir, cur_dir, files in os.walk(dir_path):
-                count += len(files)
-            main_folder_size = subprocess.check_output(['du', '-sh', dir_path]).split()[0].decode('utf-8')
-            user_name = database.select('''SELECT user_name FROM user WHERE token=?''',
-                                        (request.cookies.get('userID'),))
-            return render_template('admin/home.html', data=user_name, file_number=count,
-                                   main_folder_size=main_folder_size)
-        else:
-            return redirect(url_for('home'))
-
-    except Exception as e:
-        print(e)
-        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
-        return redirect(url_for('home'))
-
-
-# Fonction permettant de visualiser les utilisateur de Cantina Cloud
-@app.route('/admin/usermanager/')
-@app.route('/admin/usermanager/<user_name>')
-def admin_show_user(user_name=None):
-    try:
-        admin_and_login = user_login()
-        if admin_and_login[0] and admin_and_login[1]:
-            if user_name:
-                user_account = database.select('''SELECT * FROM user WHERE user_name=?''', (user_name,))
-
-                return render_template('admin/specific_user_manager.html', user_account=user_account[0])
-            else:
-                all_account = database.select(body='''SELECT * FROM user''', number_of_data=0)
-                user_name = database.select('''SELECT user_name FROM user WHERE token=?''',
-                                            (request.cookies.get('userID'),))
-                return render_template('admin/user_manager.html', user_name=user_name,
-                                       all_account=all_account)
-        else:
-            return redirect(url_for('home'))
-    except Exception as e:
-        print(e)
-        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
-        return redirect(url_for('home'))
-
-
-# Fonction permettant de créer un utilisateur
-@app.route('/admin/add_user/', methods=['POST', 'GET'])
-def admin_add_user():
-    try:
-        admin_and_login = user_login()
-        if admin_and_login[0] and admin_and_login[1]:
-            if request.method == 'GET':
-                user_name = database.select('''SELECT user_name FROM user WHERE token=?''',
-                                            (request.cookies.get('userID'),))
-                return render_template('admin/add_user.html', user_name=user_name)
-            elif request.method == 'POST':
-                if request.form['pword1'] == request.form['pword2']:
-                    try:
-                        if request.form['admin'] == 'on':
-                            admin = True
-                        else:
-                            admin = False
-                    except Exception as e:
-                        print(e)
-                        admin = False
-                    new_uuid = str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())))
-                    database.insert('''INSERT INTO user(token, user_name, password, admin, work_Dir) VALUES (?, ?, ?, 
-                            ?, ?)''', (new_uuid, request.form['uname'], hash_perso(request.form['pword2']), admin,
-                                       dir_path + '/' + secure_filename(request.form['uname'])))
-                    os.mkdir(dir_path + '/' + secure_filename(request.form['uname']))
-                    make_log('add_user', request.remote_addr, request.cookies.get('userID'), 2,
-                             'Created user token: ' + new_uuid)
-                    return redirect(url_for('admin_show_user'))
-        else:
-            return redirect(url_for('home'))
-    except Exception as e:
-        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
-        return redirect(url_for('home'))
-
-
-# Fonction permettant de voire les logs générer par Cantina Cloud
-@app.route('/admin/show_log/')
-@app.route('/admin/show_log/<log_id>')
-def admin_show_log(log_id=None):
-    try:
-        admin_and_login = user_login()
-        if admin_and_login[0] and admin_and_login[1]:
-            if log_id:
-                log = database.select('''SELECT * FROM log WHERE ID=?''', (log_id,), 1)
-                return render_template('admin/specific_log.html', log=log)
-            else:
-                all_log = database.select('''SELECT * FROM log''')
-                return render_template('admin/show_log.html', all_log=all_log)
-    except Exception as e:
-        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
-        return redirect(url_for('home'))
-
-
-# Fonction permettant de voire tout les fichiers partagé
-@app.route('/admin/show_share_file/')
-@app.route('/admin/show_share_file/<random_name>')
-def admin_show_share_file(random_name=None):
-    admin_and_login = user_login()
-    if admin_and_login[0] and admin_and_login[1]:
-        user_name = database.select('''SELECT user_name FROM user WHERE token=?''', (request.cookies.get('userID'),), 1)
-        try:
-            if random_name:
-                row = database.select('''SELECT file_name, file_owner FROM file_sharing WHERE file_short_name=?''',
-                                      (random_name,), 1)
-                os.remove(share_path + '/' + row[1] + '/' + row[0])
-                database.insert('''DELETE FROM file_sharing WHERE file_short_name = ?;''', (random_name,))
-        except Exception as e:
-            print(e)
-            make_log('error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
-        all_share_file = database.select('''SELECT * FROM file_sharing''')
-        return render_template('admin/show_share_file.html', user_name=user_name, all_share_file=all_share_file)
-
-    else:
-        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2)
-        return redirect(url_for('home'))
-
-
-# Fonction permettant de voire les API créer sur Cantina Cloud
-@app.route('/admin/api_manager/')
-@app.route('/admin/api_manager/<api_id>')
-def admin_api_manager(api_id=None):
-    admin_and_login = user_login()
-    if admin_and_login[0] and admin_and_login[1]:
-        if api_id:
-            api = database.select('''SELECT * FROM api WHERE ID=?''', (api_id,))
-            return render_template('admin/specific_api_manager.html', api=api[0])
-        else:
-            api = database.select('''SELECT * FROM api''')
-            return render_template('admin/api_manager.html', api=api)
-    else:
-        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2)
-        return redirect(url_for('home'))
 
 
 # Fonction permettant de créer une API Cantina Cloud
@@ -621,8 +621,9 @@ def add_user_api():
 
 @app.errorhandler(404)
 def page_not_found(error):
+    # make_log('404 not found', request.remote_addr, request.cookies.get('userID'), 1, error)
     return render_template('error/404.html'), 404
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(port=config_data['port'])
