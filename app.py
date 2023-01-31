@@ -109,6 +109,7 @@ def file():
     actual_path, lastPath, rand_name = '/', '/', ''
     args = request.args
     work_file_in_dir, work_dir = [], []
+    git_repo = False
     user_token = request.cookies.get('userID')
     # Redirection vers la connection si l'utilisateur n'est pas connecté
     if not user_token:
@@ -144,18 +145,22 @@ def file():
 
         if row[1]:
             for (dirpath, dirnames, filenames) in os.walk(dir_path + '/' + args.get('path')):
+                if '.git' in dirnames:
+                    git_repo = True
                 work_file_in_dir.extend(filenames)
                 work_dir.extend(dirnames)
                 break
         elif not row[1]:
             for (dirpath, dirnames, filenames) in os.walk(row[0] + args.get('path')):
+                if '.git' in dirnames:
+                    git_repo = True
                 work_file_in_dir.extend(filenames)
                 work_dir.extend(dirnames)
                 break
 
     if not args.get('action') or args.get('action') == 'show':
         return render_template('myfile.html', dir=work_dir, file=work_file_in_dir, path=actual_path,
-                               lastPath=lastPath)
+                               lastPath=lastPath, git_repo=git_repo)
 
     elif args.get('action') == "deleteFile" and args.get('workFile') and args.get('workFile') in filenames:
         if row[1]:
@@ -174,10 +179,17 @@ def file():
 
     elif args.get('action') == "cloneRepo" and args.get('repoLink'):
         if row[1]:
-            print("iii")
             os.system("cd " + dir_path + args.get('path') + "/ && git clone " + args.get('repoLink'))
         elif not row[1]:
             os.system("cd " + row[0] + '/' + args.get('path') + "/ && git clone " + args.get('repoLink'))
+
+        return render_template("redirect/r-myfile.html", path="/my/file/?path=" + actual_path, lastPath=lastPath)
+
+    elif args.get('action') == "pullRepo" and git_repo:
+        if row[1]:
+            os.system("cd " + dir_path + args.get('path') + "/ && git pull")
+        elif not row[1]:
+            os.system("cd " + row[0] + '/' + args.get('path') + "/ && git pull")
 
         return render_template("redirect/r-myfile.html", path="/my/file/?path=" + actual_path, lastPath=lastPath)
 
