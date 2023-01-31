@@ -203,10 +203,10 @@ def file():
 
     elif args.get('action') == "shareFolder" and args.get('workFolder') and args.get('loginToShow'):
         if row[1]:
-            make_tarfile(share_path + row[2] + '/' + args.get('workFolder') + '.tar.gz',
+            make_tarfile(share_path + '/' + row[2] + '/' + args.get('workFolder') + '.tar.gz',
                          dir_path + actual_path + args.get('workFolder'))
         elif not row[1]:
-            make_tarfile(share_path + row[2] + '/' + args.get('workFolder') + '.tar.gz',
+            make_tarfile(share_path + '/' + row[2] + '/' + args.get('workFolder') + '.tar.gz',
                          row[0] + '/' + actual_path + args.get('workFolder'))
         database.insert('''INSERT INTO file_sharing(file_name, file_owner, file_short_name, login_to_show, password) 
                                     VALUES (?, ?, ?, ?, ?)''', (args.get('workFolder') + '.tar.gz', row[2],
@@ -625,4 +625,4 @@ def page_not_found(error):
 
 
 if __name__ == '__main__':
-    app.run(config_data['port'])
+    app.run(port=config_data['port'])
