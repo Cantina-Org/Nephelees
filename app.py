@@ -172,6 +172,15 @@ def file():
         os.close(fd)
         return render_template("redirect/r-myfile.html", path="/my/file/?path=" + actual_path, lastPath=lastPath)
 
+    elif args.get('action') == "cloneRepo" and args.get('repoLink'):
+        if row[1]:
+            print("iii")
+            os.system("cd " + dir_path + args.get('path') + "/ && git clone " + args.get('repoLink'))
+        elif not row[1]:
+            os.system("cd " + row[0] + '/' + args.get('path') + "/ && git clone " + args.get('repoLink'))
+
+        return render_template("redirect/r-myfile.html", path="/my/file/?path=" + actual_path, lastPath=lastPath)
+
     elif args.get('action') == "deleteFolder" and args.get('workFile') and args.get('workFile') in work_dir:
         if row[1]:
             shutil.rmtree(dir_path + actual_path + "/" + args.get('workFile'))
@@ -203,15 +212,14 @@ def file():
 
     elif args.get('action') == "shareFolder" and args.get('workFolder') and args.get('loginToShow'):
         if row[1]:
-            make_tarfile(share_path + row[2] + '/' + args.get('workFolder') + '.tar.gz',
+            make_tarfile(share_path + '/' + row[2] + '/' + args.get('workFolder') + '.tar.gz',
                          dir_path + actual_path + args.get('workFolder'))
         elif not row[1]:
-            make_tarfile(share_path + row[2] + '/' + args.get('workFolder') + '.tar.gz',
+            make_tarfile(share_path + '/' + row[2] + '/' + args.get('workFolder') + '.tar.gz',
                          row[0] + '/' + actual_path + args.get('workFolder'))
         database.insert('''INSERT INTO file_sharing(file_name, file_owner, file_short_name, login_to_show, password) 
-                                    VALUES (?, ?, ?, ?, ?)''', (args.get('workFolder') + '.tar.gz', row[2],
-                                                                rand_name, args.get('loginToShow'),
-                                                                hash_perso(args.get('password'))))
+                            VALUES (?, ?, ?, ?, ?)''', (args.get('workFolder') + '.tar.gz', row[2], rand_name,
+                                                        args.get('loginToShow'), hash_perso(args.get('password'))))
         return render_template("redirect/r-myfile-clipboardcopy.html", short_name=rand_name,
                                path="/my/file/?path=" + actual_path)
 

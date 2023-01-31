@@ -12,6 +12,7 @@
     <script src="{{ url_for('static', filename="create_file.js") }}"></script>
     <script src="{{ url_for('static', filename="share_file.js") }}"></script>
     <script src="{{ url_for('static', filename="share_folder.js") }}"></script>
+    <script src="{{ url_for('static', filename="clone_repository.js") }}"></script>
 </head>
 <body>
     <div class="has-text-centered">
@@ -22,9 +23,10 @@
             Mes Fichiers
         </p>
         <p style="margin-top: 15px; padding-bottom: 15px;" class="panel-tabs has-text-centerd">
-            <button style="margin-left: 15px" class="button is-primary is-outlined" type="button" onclick="window.location.href='{{ url_for('upload_file', path=path) }}'">Upload File</button>
-            <button style="margin-left: 15px" class="button is-primary is-outlined" onclick="create_file('{{ path }}')">Create file</button>
-            <button style="margin-left: 15px" class="button is-primary is-outlined" onclick="create_folder('{{ path }}')">Create Folder</button>
+            <button style="margin-left: 15px" class="button is-primary is-outlined" type="button" onclick="window.location.href='{{ url_for('upload_file', path=path) }}'">Téléverser un Fichier</button>
+            <button style="margin-left: 15px" class="button is-primary is-outlined" onclick="create_file('{{ path }}')">Créer un fichier</button>
+            <button style="margin-left: 15px" class="button is-primary is-outlined" onclick="create_folder('{{ path }}')">Créer un Dossier</button>
+            <button style="margin-left: 15px" class="button is-primary is-outlined" onclick="clone_repository('{{ path }}')">Cloner un dépot GitHub</button>
             <a style="margin-left: 15px" class="button is-primary is-outlined" href="{{ url_for('file', path=lastPath) }}">..</a>
         </p>
         {% for item in dir %}
