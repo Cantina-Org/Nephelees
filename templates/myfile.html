@@ -12,7 +12,8 @@
     <script src="{{ url_for('static', filename="create_file.js") }}"></script>
     <script src="{{ url_for('static', filename="share_file.js") }}"></script>
     <script src="{{ url_for('static', filename="share_folder.js") }}"></script>
-    <script src="{{ url_for('static', filename="clone_repository.js") }}"></script>
+    <script src="{{ url_for('static', filename="git-js/clone_repository.js") }}"></script>
+    <script src="{{ url_for('static', filename="git-js/pull_repository.js") }}"></script>
 </head>
 <body>
     <div class="has-text-centered">
@@ -26,7 +27,11 @@
             <button style="margin-left: 15px" class="button is-primary is-outlined" type="button" onclick="window.location.href='{{ url_for('upload_file', path=path) }}'">Téléverser un Fichier</button>
             <button style="margin-left: 15px" class="button is-primary is-outlined" onclick="create_file('{{ path }}')">Créer un fichier</button>
             <button style="margin-left: 15px" class="button is-primary is-outlined" onclick="create_folder('{{ path }}')">Créer un Dossier</button>
-            <button style="margin-left: 15px" class="button is-primary is-outlined" onclick="clone_repository('{{ path }}')">Cloner un dépot GitHub</button>
+            {% if git_repo %}
+                <button style="margin-left: 15px" class="button is-primary is-outlined" onclick="pull_repository('{{ path }}')">Mettre à jour le dépot locale</button>
+            {% else %}
+                <button style="margin-left: 15px" class="button is-primary is-outlined" onclick="clone_repository('{{ path }}')">Cloner un dépot GitHub</button>
+            {% endif %}
             <a style="margin-left: 15px" class="button is-primary is-outlined" href="{{ url_for('file', path=lastPath) }}">..</a>
         </p>
         {% for item in dir %}
@@ -34,7 +39,6 @@
                 <span class="icon is-left">
                     <img src="https://img.icons8.com/ios/50/null/folder-invoices--v1.png"/>
                 </span>
-                <!-- href="" -->
                 <button class="button is-size-6 is-text" onclick="window.location.href='{{ url_for('file', path=path+item+'/') }}'">{{ item }}</button>
                 <button class="button is-danger"  style="margin-left: 40px" onclick="delete_folder('{{ path }}', '{{ item }}')"><img style="height: auto; width: 75%;" src="https://img.icons8.com/ios/50/null/trash--v1.png" alt="Une poubelle pour supprimer ce dossier"/></button>
                 <button class="button is-primary" style="margin-left: 15px" onclick="share_folder('{{ path }}', '{{ item }}')"><img style="height: auto; width: 75%;" src="https://img.icons8.com/ios/50/null/link--v1.png" alt="Une poubelle pour supprimer ce dossier"/></button>
