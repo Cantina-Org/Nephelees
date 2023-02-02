@@ -1,8 +1,8 @@
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, url_for, redirect, make_response, send_from_directory, jsonify
+import argon2
 import datetime
 import os
-import hashlib
 import subprocess
 import uuid
 import shutil
@@ -10,7 +10,9 @@ import random
 import string
 import tarfile
 import json
+import hashlib
 import Utils.database
+import chardet
 
 
 def f_user_name(user_id):
@@ -18,18 +20,14 @@ def f_user_name(user_id):
     return data[0]
 
 
-def hash_perso(passwordtohash):
+def salt_password(passwordtohash, user_name):
     try:
-        passw = passwordtohash.encode()
-    except AttributeError:
+        data = database.select('''SELECT salt FROM user WHERE user_name=?''', (user_name,), 1)
+        passw = hashlib.sha256(argon2.argon2_hash(passwordtohash, data[0])).hexdigest().encode()
+
+    except AttributeError as e:
+        print(e)
         return None
-    passw = hashlib.md5(passw).hexdigest()
-    passw = passw.encode()
-    passw = hashlib.sha256(passw).hexdigest()
-    passw = passw.encode()
-    passw = hashlib.sha512(passw).hexdigest()
-    passw = passw.encode()
-    passw = hashlib.md5(passw).hexdigest()
     return passw
 
 
@@ -76,7 +74,7 @@ database.connection()
 
 # Creation des tables de la base donnée
 database.create_table("CREATE TABLE IF NOT EXISTS user(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
-                      "user_name TEXT, password TEXT, admin BOOL, work_Dir TEXT, last_online TEXT)")
+                      "user_name TEXT, salt TEXT, password TEXT, admin BOOL, work_Dir TEXT, last_online TEXT)")
 database.create_table("CREATE TABLE IF NOT EXISTS log(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, name TEXT, "
                       "user_ip text, user_token TEXT, argument TEXT, log_level INT, "
                       "date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
@@ -215,10 +213,10 @@ def file():
         elif not row[1]:
             shutil.copy2(row[0] + '/' + actual_path + args.get('workFile'),
                          share_path + row[2] + '/' + args.get('workFile'))
+        print(chardet.detect(salt_password(args.get('password'), row[2])))
         database.insert('''INSERT INTO file_sharing(file_name, file_owner, file_short_name, login_to_show, password) 
-                                    VALUES (?, ?, ?, ?, ?)''', (args.get('workFile'), row[2],
-                                                                rand_name, args.get('loginToShow'),
-                                                                hash_perso(args.get('password'))))
+                        VALUES (?, ?, ?, ?, ?)''', (args.get('workFile'), row[2], rand_name, args.get('loginToShow'),
+                                                    salt_password(args.get('password'), row[2])))
         return render_template("redirect/r-myfile-clipboardcopy.html", short_name=rand_name,
                                path="/my/file/?path=" + actual_path)
 
@@ -231,7 +229,8 @@ def file():
                          row[0] + '/' + actual_path + args.get('workFolder'))
         database.insert('''INSERT INTO file_sharing(file_name, file_owner, file_short_name, login_to_show, password) 
                             VALUES (?, ?, ?, ?, ?)''', (args.get('workFolder') + '.tar.gz', row[2], rand_name,
-                                                        args.get('loginToShow'), hash_perso(args.get('password'))))
+                                                        args.get('loginToShow'), salt_password(args.get('password'),
+                                                                                               row[2])))
         return render_template("redirect/r-myfile-clipboardcopy.html", short_name=rand_name,
                                path="/my/file/?path=" + actual_path)
 
@@ -291,16 +290,14 @@ def download_file():
 # Fonction permettant de voire les fichiers partagé
 @app.route('/file_share/<short_name>')
 def file_share(short_name=None):
-    print(short_name.lower())
-    row = database.select(body='''SELECT * FROM file_sharing WHERE file_short_name=?''', args=(short_name,),
-                          number_of_data=1)
-    print(row)
+    row = database.select('''SELECT * FROM file_sharing WHERE file_short_name=?''', (short_name,), 1)
     is_login = user_login()
     if not row[4]:
         if not row[5]:
             return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
         elif row[5] != "" and request.args.get('password') != "":
-            if hash_perso(request.args.get('password')) == row[5]:
+            data = database.select('''SELECT salt FROM user WHERE user_name=?''', (row[2],), 1)
+            if salt_password(request.args.get('password'), data) == row[5]:
                 return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
             else:
                 return render_template('redirect/r-share-file-with-password.html', short_name=short_name)
@@ -321,7 +318,7 @@ def login():
         user = request.form['nm']
         passwd = request.form['passwd']
         row = database.select(f'''SELECT user_name, password, token FROM user WHERE password = ? AND user_name = ?''',
-                              (hash_perso(passwd), user), 1)
+                              (salt_password(passwd, user), user), 1)
 
         try:
             make_log('login', request.remote_addr, row[2], 1)
@@ -405,6 +402,7 @@ def admin_add_user():
                                             (request.cookies.get('userID'),))
                 return render_template('admin/add_user.html', user_name=user_name)
             elif request.method == 'POST':
+
                 if request.form['pword1'] == request.form['pword2']:
                     try:
                         if request.form['admin'] == 'on':
@@ -414,10 +412,17 @@ def admin_add_user():
                     except Exception as e:
                         print(e)
                         admin = False
+
                     new_uuid = str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())))
-                    database.insert('''INSERT INTO user(token, user_name, password, admin, work_Dir) VALUES (?, ?, ?, 
-                            ?, ?)''', (new_uuid, request.form['uname'], hash_perso(request.form['pword2']), admin,
-                                       dir_path + '/' + secure_filename(request.form['uname'])))
+                    new_salt = hashlib.new('sha256').hexdigest()
+                    try:
+                        database.insert('''INSERT INTO user(token, user_name, salt, password, admin, work_Dir) VALUES (?, ?,
+                         ?, ?, ?, ?)''', (new_uuid, request.form['uname'], new_salt, salt_password(request.form['pword2'],
+                                                                                                   new_salt), admin,
+                                          dir_path + '/' + secure_filename(request.form['uname'])))
+                    except Exception as e:
+                        print(e)
+                    print("eeeee")
                     os.mkdir(dir_path + '/' + secure_filename(request.form['uname']))
                     make_log('add_user', request.remote_addr, request.cookies.get('userID'), 2,
                              'Created user token: ' + new_uuid)
@@ -603,13 +608,15 @@ def add_user_api():
     row2 = database.select('''SELECT * FROM api_permission where token_api=?''', (content['api-token'],), 1)
     if row2[8]:
         try:
+            new_salt = hashlib.new('sha256').hexdigest()
             new_uuid = str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())))
             if content['admin'] == 1:
                 admin = True
 
-            database.insert('''INSERT INTO user(token, user_name, password, admin, work_Dir) 
-                            VALUES (?, ?, ?, ?, ?)''', (new_uuid, content['username'], hash_perso(content['password']),
-                                                        admin, dir_path + '/' + secure_filename(content['username'])))
+            database.insert('''INSERT INTO user(token, user_name, salt, password, admin, work_Dir) 
+                            VALUES (?, ?, ?, ?, ?, ?)''', (new_uuid, content['username'], new_salt,
+                                                           salt_password(content['password'], new_salt), admin,
+                                                           dir_path + '/' + secure_filename(content['username'])))
             make_log('add_user_api', request.remote_addr, request.cookies.get('userID'), 4,
                      'Created User token: ' + new_uuid, content['api-token'])
             return jsonify({
