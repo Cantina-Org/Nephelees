@@ -416,10 +416,10 @@ def admin_add_user():
                     new_uuid = str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())))
                     new_salt = hashlib.new('sha256').hexdigest()
                     try:
-                        database.insert('''INSERT INTO user(token, user_name, salt, password, admin, work_Dir) VALUES (?, ?,
-                         ?, ?, ?, ?)''', (new_uuid, request.form['uname'], new_salt, salt_password(request.form['pword2'],
-                                                                                                   new_salt), admin,
-                                          dir_path + '/' + secure_filename(request.form['uname'])))
+                        database.insert('''INSERT INTO user(token, user_name, salt, password, admin, work_Dir) VALUES 
+                        (?, ?, ?, ?, ?, ?)''', (new_uuid, request.form['uname'], new_salt,
+                                                salt_password(request.form['pword2'], new_salt), admin,
+                                                dir_path + '/' + secure_filename(request.form['uname'])))
                     except Exception as e:
                         print(e)
                     print("eeeee")
