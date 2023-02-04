@@ -45,7 +45,7 @@ while not conf1:
     confirm = input("Confirmez vous les données ci-dessus? ")
 
     if confirm == "yes" or confirm == "oui" or confirm == "y" or confirm == "o":
-        if not username or not mdp or not db_uname or not db_name or not db_passw:
+        if not username or not mdp or not db_uname or not db_name or not db_passw or not port:
             conf1 = False
         else:
             conf1 = True
