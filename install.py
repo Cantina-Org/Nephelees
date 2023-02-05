@@ -2,6 +2,8 @@ import json
 import os
 import hashlib
 import uuid
+
+import argon2
 import mariadb
 
 mdp = ""
@@ -9,18 +11,12 @@ mdp2 = ""
 conf1 = False
 
 
-def hash_perso(passwordtohash):
+def salt_password(passwordtohash, salt):
     try:
-        passw = passwordtohash.encode()
-    except AttributeError:
+        passw = hashlib.sha256(argon2.argon2_hash(passwordtohash, salt)).hexdigest().encode()
+    except AttributeError as e:
+        print(e)
         return None
-    passw = hashlib.md5(passw).hexdigest()
-    passw = passw.encode()
-    passw = hashlib.sha256(passw).hexdigest()
-    passw = passw.encode()
-    passw = hashlib.sha512(passw).hexdigest()
-    passw = passw.encode()
-    passw = hashlib.md5(passw).hexdigest()
     return passw
 
 
@@ -28,10 +24,10 @@ if os.geteuid() != 0:
     exit("L'installation doit être fait en root!")
 
 print("Bienvenue dans l'installation de Cantina Cloud!")
-os.system("sudo adduser cantina --system")
-os.system("sudo addgroup cantina")
-os.system("git clone https://github.com/Cantina-Org/cantina.git /home/cantina/cloud")
-os.system("mkdir /home/cantina/cloud/file_cloud /home/cantina/cloud/share")
+os.system("sudo adduser cantina-cloud --system")
+os.system("sudo addgroup cantina-cloud")
+os.system("git clone https://github.com/Cantina-Org/cantina.git /home/cantina-cloud/cloud")
+os.system("mkdir /home/cantina-cloud/cloud/file_cloud /home/cantina-cloud/cloud/share")
 os.system("pip install Flask")
 
 print("---------------------------------------------------------------------------------------------------------------")
@@ -49,7 +45,7 @@ while not conf1:
     confirm = input("Confirmez vous les données ci-dessus? ")
 
     if confirm == "yes" or confirm == "oui" or confirm == "y" or confirm == "o":
-        if not username or not mdp or not db_uname or not db_name or not db_passw:
+        if not username or not mdp or not db_uname or not db_name or not db_passw or not port:
             conf1 = False
         else:
             conf1 = True
@@ -70,11 +66,12 @@ cursor.execute("CREATE TABLE IF NOT EXISTS api(ID INT PRIMARY KEY NOT NULL AUTO_
 cursor.execute("CREATE TABLE IF NOT EXISTS api_permission(token_api TEXT, create_file BOOL, upload_file BOOL, "
                "delete_file BOOL, create_folder BOOL, delete_folder BOOL, share_file_and_folder BOOL, "
                "delete_share_file_and_folder BOOL, create_user BOOL, delete_user BOOL)")
-cursor.execute(f'''INSERT INTO user(token, user_name, password, admin, work_Dir) VALUES (?, ?, ?, ?, ?)''', (
-    str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1()))), username, hash_perso(mdp), 1,
-    '/home/cantina/cloud/file_cloud/' + username))
+salt = hashlib.sha256().hexdigest()
+cursor.execute(f'''INSERT INTO user(token, user_name, salt, password, admin, work_Dir) VALUES (?, ?, ?, ?, ?, ?)''', (
+    str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1()))), username, hashlib.sha256(), salt_password(mdp, hashlib.sha256()),
+    1, '/home/cantina-cloud/cloud/file_cloud/' + username))
 con.commit()
-os.system("mkdir /home/cantina/cloud/file_cloud/matbe /home/cantina/cloud/share/matbe")
+os.system("mkdir /home/cantina-cloud/cloud/file_cloud/matbe /home/cantina-cloud/cloud/share/matbe")
 
 json_data = {"database": {"database_username": db_uname, "database_password": db_passw, "database_name": db_name},
              "server": {"port": 5000}}
@@ -86,16 +83,16 @@ os.system("touch /etc/systemd/system/cloud.service")
 os.system(f"""echo '[Unit]
 Description=Cantina Cloud
 [Service]
-User=cantina
-WorkingDirectory=/home/cantina/cloud
+User=cantina-cloud
+WorkingDirectory=/home/cantina-cloud/cloud
 ExecStart=python3 app.py
 [Install]
-WantedBy=multi-user.target' >> /etc/systemd/system/cantina.service""")
-os.system('chown cantina /home/cantina/*/*/* && chgrp cantina /home/cantina/*/*/*')
-os.system("systemctl enable cantina")
-os.system("systemctl start cantina")
+WantedBy=multi-user.target' >> /etc/systemd/system/cantina-cloud.service""")
+os.system('chown cantina-cloud /home/cantina-cloud/*/*/* && chgrp cantina-cloud /home/cantina-cloud/*/*/*')
+os.system("systemctl enable cantina-cloud")
+os.system("systemctl start cantina-cloud")
 
 print("---------------------------------------------------------------------------------------------------------------")
-os.system("rm /home/cantina/cloud/installer.py")
+os.system("rm /home/cantina-cloud/cloud/installer.py")
 print("Nous venons de finir l'instalation de Cantina! Vous pouvez maintenant configurer votre serveur web pour qu'il "
       "pointe sur l'ip 127.0.0.1:{}!".format(port))

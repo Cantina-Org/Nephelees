@@ -1,20 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<module type="PYTHON_MODULE" version="4">
-  <component name="Flask">
-    <option name="enabled" value="true" />
-  </component>
+<module version="4">
   <component name="NewModuleRootManager">
-    <content url="file://$MODULE_DIR$">
-      <excludeFolder url="file://$MODULE_DIR$/venv" />
-    </content>
-    <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="font-awesome" level="application" />
-    <orderEntry type="library" name="dcdb554a4d" level="application" />
-    <orderEntry type="library" name="dcdb554a4d" level="application" />
-    <orderEntry type="library" name="aos" level="application" />
-    <orderEntry type="library" name="headroom.js" level="application" />
-    <orderEntry type="library" name="font-awesome" level="application" />
   </component>
   <component name="TemplatesService">
     <option name="TEMPLATE_CONFIGURATION" value="Jinja2" />
