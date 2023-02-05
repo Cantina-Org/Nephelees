@@ -1,5 +1,6 @@
 from werkzeug.utils import secure_filename
-from flask import Flask, render_template, request, url_for, redirect, make_response, send_from_directory, jsonify
+from flask import Flask, render_template, request, url_for, redirect, make_response, send_from_directory, jsonify, \
+    escape
 import argon2
 import datetime
 import os
@@ -563,12 +564,12 @@ def admin_add_api():
 @app.route('/api/v1/test_connection', methods=['GET'])
 def test_connection():
     content = request.json
-    row1 = database.select('''SELECT * FROM api where token=?''', (content['api-token'],), 1)
+    row1 = database.select('''SELECT * FROM api where token=?''', (escape(content['api-token']),), 1)
     make_log('test_connection', request.remote_addr, content['api-token'], 4, content['api-token'])
     return jsonify({
         "status-code": "200",
         "api-id": row1[0],
-        "api-token": content['api-token'],
+        "api-token": escape(content['api-token']),
         "api-name": row1[2],
         "api-desc": row1[3],
         "owner": row1[4],
@@ -578,13 +579,13 @@ def test_connection():
 @app.route('/api/v1/show_permission', methods=['GET'])
 def show_permission():
     content = request.json
-    row1 = database.select('''SELECT * FROM api where token=?''', (content['api-token'],), 1)
-    row2 = database.select('''SELECT * FROM api_permission where token_api=?''', (content['api-token'],), 1)
-    make_log('show_permission', request.remote_addr, content['api-token'], 4, content['api-token'])
+    row1 = database.select('''SELECT * FROM api where token=?''', (escape(content['api-token']),), 1)
+    row2 = database.select('''SELECT * FROM api_permission where token_api=?''', (escape(content['api-token']),), 1)
+    make_log('show_permission', request.remote_addr, escape(content['api-token']), 4, escape(content['api-token']))
 
     return jsonify({
         "status-code": "200",
-        "api-token": content['api-token'],
+        "api-token": escape(content['api-token']),
         "api-name": row1[2],
         "permission": {
             "create_file": row2[1],
@@ -604,8 +605,8 @@ def show_permission():
 def add_user_api():
     admin = False
     content = request.json
-    row1 = database.select('''SELECT * FROM api where token=?''', (content['api-token'],), 1)
-    row2 = database.select('''SELECT * FROM api_permission where token_api=?''', (content['api-token'],), 1)
+    row1 = database.select('''SELECT * FROM api where token=?''', (escape(content['api-token']),), 1)
+    row2 = database.select('''SELECT * FROM api_permission where token_api=?''', (escape(content['api-token']),), 1)
     if row2[8]:
         try:
             new_salt = hashlib.new('sha256').hexdigest()
@@ -614,17 +615,17 @@ def add_user_api():
                 admin = True
 
             database.insert('''INSERT INTO user(token, user_name, salt, password, admin, work_Dir) 
-                            VALUES (?, ?, ?, ?, ?, ?)''', (new_uuid, content['username'], new_salt,
+                            VALUES (?, ?, ?, ?, ?, ?)''', (new_uuid, escape(content['username']), new_salt,
                                                            salt_password(content['password'], new_salt), admin,
                                                            dir_path + '/' + secure_filename(content['username'])))
             make_log('add_user_api', request.remote_addr, request.cookies.get('userID'), 4,
-                     'Created User token: ' + new_uuid, content['api-token'])
+                     'Created User token: ' + new_uuid, escape(content['api-token']))
             return jsonify({
                 "status-code": "200",
-                "api-token": content['api-token'],
-                "user-to-create": content['username'],
-                "user-passsword-to-create": content['password'],
-                "user-permission-to-create": content['admin'],
+                "api-token": escape(content['api-token']),
+                "user-to-create": escape(content['username']),
+                "user-passsword-to-create": escape(content['password']),
+                "user-permission-to-create": escape(content['admin']),
                 "user-token-create": new_uuid
             })
         except KeyError as e:
