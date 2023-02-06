@@ -436,11 +436,9 @@ def admin_add_user():
                             else:
                                 pass
                         username = request.form['uname']
-                        password = salt_password(request.form['pword2'], new_salt)
+                        password = salt_password(request.form['pword2'], new_salt) # c'est ici que ça coince
                         path = dir_path + '/' + secure_filename('matbe3')
-                        database_administration.insert('''INSERT INTO user(token, user_name, salt, password, 
-                                                        admin, work_Dir) VALUES (?, ?, ?, ?, ?, ?)''',
-                                                       (new_uuid, 'matbe3', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 'password', 1, path))
+                        database_administration.insert('''INSERT INTO user(token, user_name, salt, password, admin, work_Dir) VALUES (?, ?, ?, ?, ?, ?)''', (new_uuid, 'matbe3', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 'password', 1, path))
 
                     except Exception as e:
                         print("\033[96m"+str(e))
