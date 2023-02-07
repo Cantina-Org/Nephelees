@@ -20,11 +20,15 @@ def f_user_name(user_id):
     return data[0]
 
 
-def salt_password(passwordtohash, user_name):
+def salt_password(passwordtohash, user_name, new_account=False):
     try:
-        data = database_administration.select('''SELECT salt FROM user WHERE user_name=?''', (user_name,), 1)
-        passw = hashlib.sha256(argon2.argon2_hash(passwordtohash, data[0])).hexdigest().encode()
-        return passw
+        if not new_account:
+            data = database_administration.select('''SELECT salt FROM user WHERE user_name=?''', (user_name,), 1)
+            passw = hashlib.sha256(argon2.argon2_hash(passwordtohash, data[0])).hexdigest().encode()
+            return passw
+        else:
+            passw = hashlib.sha256(argon2.argon2_hash(passwordtohash, user_name)).hexdigest().encode()
+            return passw
 
     except AttributeError as e:
         print(e)
@@ -415,7 +419,7 @@ def admin_show_user(user_name=None):
 @app.route('/admin/add_user/', methods=['POST', 'GET'])
 def admin_add_user():
     try:
-        admin = False
+        admin = 0
         admin_and_login = user_login()
         if admin_and_login[0] and admin_and_login[1]:
             if request.method == 'GET':
@@ -430,15 +434,16 @@ def admin_add_user():
                     new_salt = hashlib.new('sha256').hexdigest()
                     try:
                         for i in data:
-                            print(i)
                             if i == 'admin':
-                                admin = True
+                                admin = 1
                             else:
                                 pass
-                        username = request.form['uname']
-                        password = salt_password(request.form['pword2'], new_salt) # c'est ici que ça coince
-                        path = dir_path + '/' + secure_filename('matbe3')
-                        database_administration.insert('''INSERT INTO user(token, user_name, salt, password, admin, work_Dir) VALUES (?, ?, ?, ?, ?, ?)''', (new_uuid, 'matbe3', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 'password', 1, path))
+
+                        database_administration.insert('''INSERT INTO user(token, user_name, salt, password, admin, 
+                        work_Dir) VALUES (?, ?, ?, ?, ?, ?)''', (new_uuid, request.form['uname'], new_salt,
+                                                                 salt_password(request.form['pword2'], new_salt,
+                                                                               new_account=True), admin, dir_path +
+                                                                 '/' + secure_filename(request.form['uname'])))
 
                     except Exception as e:
                         print("\033[96m"+str(e))
