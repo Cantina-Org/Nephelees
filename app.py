@@ -31,7 +31,7 @@ def salt_password(passwordtohash, user_name, new_account=False):
             return passw
 
     except AttributeError as e:
-        print(e)
+        make_log('Error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
         return None
 
 
@@ -351,7 +351,7 @@ def login():
                                            (datetime.datetime.now(), row[2]))
             return resp
         except Exception as e:
-            print(e)
+            make_log('Error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
             return redirect(url_for("home"))
 
     elif request.method == 'GET':
@@ -385,7 +385,6 @@ def admin_home():
             return redirect(url_for('home'))
 
     except Exception as e:
-        print(e)
         make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
         return redirect(url_for('home'))
 
@@ -410,7 +409,6 @@ def admin_show_user(user_name=None):
         else:
             return redirect(url_for('home'))
     except Exception as e:
-        print(e)
         make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
         return redirect(url_for('home'))
 
@@ -446,7 +444,7 @@ def admin_add_user():
                                                                  '/' + secure_filename(request.form['uname'])))
 
                     except Exception as e:
-                        print("\033[96m"+str(e))
+                        make_log('Error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
 
                     os.mkdir(dir_path + '/' + secure_filename(request.form['uname']))
                     os.mkdir(share_path + '/' + secure_filename(request.form['uname']))
@@ -454,7 +452,6 @@ def admin_add_user():
                              'Created user token: ' + new_uuid)
                     return redirect(url_for('admin_show_user'))
     except Exception as e:
-        print("\033[91m"+str(e))
         make_log('Error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
         return redirect(url_for('home'))
 
@@ -494,8 +491,7 @@ def admin_show_share_file(random_name=None):
                 database_administration.insert('''DELETE FROM file_sharing WHERE file_short_name = ?;''',
                                                (random_name,))
         except Exception as e:
-            print(e)
-            make_log('error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
+            make_log('Error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
         all_share_file = database_cloud.select('''SELECT * FROM file_sharing''')
         return render_template('admin/show_share_file.html', user_name=user_name, all_share_file=all_share_file)
 
