@@ -449,6 +449,7 @@ def admin_add_user():
                         print("\033[96m"+str(e))
 
                     os.mkdir(dir_path + '/' + secure_filename(request.form['uname']))
+                    os.mkdir(share_path + '/' + secure_filename(request.form['uname']))
                     make_log('add_user', request.remote_addr, request.cookies.get('userID'), 2,
                              'Created user token: ' + new_uuid)
                     return redirect(url_for('admin_show_user'))
