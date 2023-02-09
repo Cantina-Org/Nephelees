@@ -1,6 +1,8 @@
 import os
 import platform
 
+CRED = '\033[91m'
+CEND = '\033[0m'
 based_on = None
 os_info = platform.uname()
 
@@ -13,7 +15,8 @@ print("Bienvenue dans l'installation de Cantina Cloud!")
 
 if "Debian" in os_info.version:
     print("Système Debian détecter.")
-    based_on = "Debian"
+    os.system("sudo adduser cantina --system")
+    os.system("sudo addgroup cantina")
 else:
     distrib_check = input(
         "Votre système est:\n     1: Basé sur Debian\n     2: Basé sur Arch\n     3: Basé sur Red Hat")
@@ -22,8 +25,28 @@ else:
         distrib_check = input(
             "Votre système est:\n     1: Basé sur Debian\n     2: Basé sur Arch\n     3: Basé sur Red Hat")
 
-    if distrib_check == "1": based_on = "Debian"
-    elif distrib_check == "2": based_on = "Arch"
-    elif distrib_check == "3": based_on = "Red Hat"
-    else: exit("Vous avez cassé notre système :/")
+    if distrib_check == "1" or distrib_check == "3":
+        os.system("sudo adduser cantina --system")
+        os.system("sudo addgroup cantina")
+    elif distrib_check == "2":
+        os.system("sudo useradd cantina")
+        os.system("sudo groupadd cantina")
+    else:
+        exit("Vous avez cassé notre système :/")
 
+os.system("sudo usermod -a -G cantina cantina")
+os.system("git clone https://github.com/Cantina-Org/Cloud /home/cantina/cloud")
+os.system("mkdir /home/cantina/cloud/file_cloud /home/cantina/cloud/share")
+os.system("pip install Flask")
+
+print(CRED +
+      "----------------------------------------------------------------------------------------------------------------"
+      "------" + CEND
+      )
+
+new_instance = input("Avez vous déjà installé sur ce serveur une projet Cantina?")
+
+print(CRED +
+      "----------------------------------------------------------------------------------------------------------------"
+      "------" + CEND
+      )
