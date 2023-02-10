@@ -52,7 +52,25 @@ while new_instance not in ['Oui', 'oui', 'o', 'Non', 'non', 'n']:
 if new_instance in ['Non', 'non', 'n']:
     print("Déjà des trucs")
 elif new_instance in ['Oui', 'oui', 'o']:
-    print("Un nouveau départ")
+    database_created = input("Avez-vous créer les base de donnée? (cantina-administration, cantina-cloud)")
+    while database_created not in ['Oui', 'oui', 'o', 'Non', 'non', 'n']:
+        print("Les réponses valides sont: 'Oui', 'oui', 'o' ou 'Non', 'non', 'n'")
+        database_created = input("Avez-vous créer les base de donnée? (cantina-administration, cantina-cloud)")
+
+    if database_created in ['Non', 'non', 'n']:
+        exit("Merci de créer les bases de données!")
+    elif database_created in ['Oui', 'oui', 'o']:
+        pass
+
+    print("Identifiants de connexion aux bases de données:")
+    database_username = input("    Nom d'utilisateur: ")
+    database_password = input("    Mots de passe: ")
+
+    while database_password == '' or database_username == '':
+        print("Merci de rentrer des valeurs!")
+        database_username = input("    Nom d'utilisateur: ")
+        database_password = input("    Mots de passe: ")
+
 
 print(CRED +
       "----------------------------------------------------------------------------------------------------------------"
