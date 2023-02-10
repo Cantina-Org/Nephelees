@@ -45,8 +45,17 @@ print(CRED +
       )
 
 new_instance = input("Avez vous déjà installé sur ce serveur une projet Cantina?")
+while new_instance not in ['Oui', 'oui', 'o', 'Non', 'non', 'n']:
+    print("Les réponses valides sont: 'Oui', 'oui', 'o' ou 'Non', 'non', 'n'")
+    new_instance = input("Avez vous déjà installé sur ce serveur une projet Cantina?")
+
+if new_instance in ['Non', 'non', 'n']:
+    print("Déjà des trucs")
+elif new_instance in ['Oui', 'oui', 'o']:
+    print("Un nouveau départ")
 
 print(CRED +
       "----------------------------------------------------------------------------------------------------------------"
       "------" + CEND
       )
+
