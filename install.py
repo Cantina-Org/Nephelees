@@ -1,98 +1,234 @@
+import hashlib
 import json
 import os
-import hashlib
+import platform
 import uuid
-
 import argon2
-import mariadb
-
-mdp = ""
-mdp2 = ""
-conf1 = False
+import pymysql.cursors
 
 
-def salt_password(passwordtohash, salt):
+def salt_password(passwordtohash, user_name, new_account=False):
     try:
-        passw = hashlib.sha256(argon2.argon2_hash(passwordtohash, salt)).hexdigest().encode()
+        if not new_account:
+            pass
+        else:
+            passw = hashlib.sha256(argon2.argon2_hash(passwordtohash, user_name)).hexdigest().encode()
+            return passw
+
     except AttributeError as e:
         print(e)
         return None
-    return passw
 
 
-if os.geteuid() != 0:
-    exit("L'installation doit être fait en root!")
+CRED = '\033[91m'
+CEND = '\033[0m'
+CWAR = '\033[93m'
+based_on = None
+os_info = platform.uname()
+database = [False, False]
+
+if os.getuid() != 0:
+    exit("L'installation doit être faite avec les permissions d'administrateur!")
+elif os_info.system != "Linux":
+    exit("L'installation doit être faire sur une système linux!")
 
 print("Bienvenue dans l'installation de Cantina Cloud!")
-os.system("sudo adduser cantina-cloud --system")
-os.system("sudo addgroup cantina-cloud")
-os.system("git clone https://github.com/Cantina-Org/cantina.git /home/cantina-cloud/cloud")
-os.system("mkdir /home/cantina-cloud/cloud/file_cloud /home/cantina-cloud/cloud/share")
+
+if "Debian" in os_info.version:
+    print("Système Debian détecter.")
+    os.system("sudo adduser cantina --system")
+    os.system("sudo addgroup cantina")
+else:
+    distrib_check = input(
+        "Votre système est:\n     1: Basé sur Debian\n     2: Basé sur Arch\n     3: Basé sur Red Hat\n")
+    while distrib_check not in ["1", "2", "3"]:
+        print("Merci de répondre uniquement par 1, 2 ou 3!")
+        distrib_check = input(
+            "Votre système est:\n     1: Basé sur Debian\n     2: Basé sur Arch\n     3: Basé sur Red Hat")
+
+    if distrib_check == "1" or distrib_check == "3":
+        os.system("sudo adduser cantina --system")
+        os.system("sudo addgroup cantina")
+    elif distrib_check == "2":
+        os.system("sudo useradd cantina")
+        os.system("sudo groupadd cantina")
+    else:
+        exit("Vous avez cassé notre système :/")
+
+os.system("sudo usermod -a -G cantina cantina")
+os.system("git clone https://github.com/Cantina-Org/Cloud /home/cantina/cloud")
+os.system("mkdir /home/cantina/cloud/file_cloud /home/cantina/cloud/share")
 os.system("pip install Flask")
 
-print("---------------------------------------------------------------------------------------------------------------")
-while not conf1:
+print(CRED +
+      "----------------------------------------------------------------------------------------------------------------"
+      "--------------------------------------------------------" + CEND
+      )
+
+new_instance = input("Avez vous déjà installé sur ce serveur une projet Cantina? ")
+while new_instance not in ['Oui', 'oui', 'o', 'Non', 'non', 'n']:
+    print("Les réponses valides sont: 'Oui', 'oui', 'o' ou 'Non', 'non', 'n'")
+    new_instance = input("Avez vous déjà installé un projet Cantina sur ce serveur? ")
+
+if new_instance in ['Oui', 'oui', 'o']:
+    print(CRED + "ATTENTION: " + CWAR + " si vous n'avez pas encore d'instance Cantina sur ce serveur, vous ne pourrez "
+                                        "pas utiliser Cantina Cloud car aucun utilisateur ne sera créé!" + CEND)
+    print("Identifiants de connexion aux bases de données: ")
+    database_username = input("    Nom d'utilisateur: ")
+    database_password = input("    Mots de passe: ")
+
+    while database_password == '' or database_username == '':
+        print("Merci de rentrer des valeurs!")
+        database_username = input("    Nom d'utilisateur: ")
+        database_password = input("    Mots de passe: ")
+
+    try:
+        con = pymysql.connect(user=database_username, password=database_password, host="localhost", port=3306)
+        cursor = con.cursor()
+
+    except Exception as e:
+        exit("Un problème est apparue lors de la connexion à Mariadb: " + str(e))
+
+    cursor.execute("""SHOW DATABASES""")
+    data = cursor.fetchall()
+
+    for i in data:
+        if i[0] == 'cantina_administration':
+            database[0] = True
+        elif i[0] == 'cantina_cloud':
+            database[1] = True
+
+    if not database[0] or not database[1]:
+        exit("Merci de créer les bases de données!\n cantina_administration: " + str(database[0]) +
+             "\ncantina_cloud: " + str(database[1]))
+
+    try:
+        cursor.execute("USE cantina_administration")
+        cursor.execute("SELECT id, user_name FROM user")
+        data_id = cursor.fetchall()
+
+        for i in data_id:
+            os.system("mkdir /home/cantina/cloud/file_cloud/{} /home/cantina/cloud/share/{}".format(i[1], i[1]))
+
+    except Exception as e:
+        exit('Une erreur est survenue lors de la récupération des utilisateur de la base de donnée: ' + str(e))
+
+    cursor.execute("USE cantina_cloud")
+    cursor.execute("CREATE TABLE IF NOT EXISTS file_sharing(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, file_name TEXT,"
+                   " file_owner text, file_short_name TEXT, login_to_show BOOL DEFAULT 1, password TEXT,"
+                   "date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS api(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
+                   "api_name TEXT, api_desc TEXT, owner TEXT)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS api_permission(token_api TEXT, create_file BOOL, upload_file BOOL, "
+                   "delete_file BOOL, create_folder BOOL, delete_folder BOOL, share_file_and_folder BOOL, "
+                   "delete_share_file_and_folder BOOL, create_user BOOL, delete_user BOOL)")
+
+
+elif new_instance in ['Non', 'non', 'n']:
+    database_created = input("Avez-vous créer les base de donnée? (cantina-administration, cantina-cloud) ")
+    while database_created not in ['Oui', 'oui', 'o', 'Non', 'non', 'n']:
+        print("Les réponses valides sont: 'Oui', 'oui', 'o' ou 'Non', 'non', 'n'")
+        database_created = input("Avez-vous créer les base de donnée? (cantina-administration, cantina-cloud) ")
+
+    if database_created in ['Non', 'non', 'n']:
+        exit("Merci de créer les bases de données!")
+    elif database_created in ['Oui', 'oui', 'o']:
+        pass
+
+    print("Identifiants de connexion aux bases de données: ")
+    database_username = input("    Nom d'utilisateur: ")
+    database_password = input("    Mots de passe: ")
+
+    while database_password == '' or database_username == '':
+        print("Merci de rentrer des valeurs!")
+        database_username = input("    Nom d'utilisateur: ")
+        database_password = input("    Mots de passe: ")
+
+    try:
+        con = pymysql.connect(user=database_username, password=database_password, host="localhost", port=3306)
+        cursor = con.cursor()
+
+    except Exception as e:
+        exit("Un problème est apparue lors de la connexion à Mariadb: " + str(e))
+
+    cursor.execute("""SHOW DATABASES""")
+    data = cursor.fetchall()
+
+    for i in data:
+        if i[0] == 'cantina_administration':
+            database[0] = True
+        elif i[0] == 'cantina_cloud':
+            database[1] = True
+
+    if not database[0] or not database[1]:
+        exit("Merci de créer les bases de données!\n cantina_administration: " + str(database[0]) +
+             "\ncantina_cloud: " + str(database[1]))
+
+    cursor.execute("USE cantina_administration")
+
+    cursor.execute("CREATE TABLE IF NOT EXISTS user(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT,  "
+                   "user_name TEXT, salt TEXT, password TEXT, admin BOOL, work_Dir TEXT, last_online TEXT)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS log(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, name TEXT,  "
+                   "user_ip text, user_token TEXT, argument TEXT, log_level INT, date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+
+
     print("Nous allons donc créer un premier compte administrateur.")
-    username = input("  Nom d'utilisateur: ")
-    mdp = input("  Mot de passe: ")
+    username = input("    Nom d'utilisateur: ")
+    mdp = input("    Mots de passe: ")
 
-    print("Configuration de la base de donnée:")
-    db_name = input("  Nom de la base de donnée: ")
-    db_passw = input("  Mot de passe de la base de donnée: ")
-    db_uname = input("  Nom d'utilisateur de la base de donnée: ")
-    print("Configuration de Cantina")
-    port = input("  Port de Cantina: ")
-    confirm = input("Confirmez vous les données ci-dessus? ")
+    salt = hashlib.sha256().hexdigest()
+    cursor.execute(f"""INSERT INTO user(token, user_name, salt, password, admin, work_Dir) VALUES (%s, %s, %s, %s, %s, %s)
+        """, (str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1()))), username, salt,
+              salt_password(mdp, salt, new_account=True), 1, '/home/cantina/cloud/file_cloud/' + username))
 
-    if confirm == "yes" or confirm == "oui" or confirm == "y" or confirm == "o":
-        if not username or not mdp or not db_uname or not db_name or not db_passw or not port:
-            conf1 = False
-        else:
-            conf1 = True
+    cursor.execute("USE cantina_cloud")
+    cursor.execute("CREATE TABLE IF NOT EXISTS file_sharing(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, file_name TEXT,"
+                   " file_owner text, file_short_name TEXT, login_to_show BOOL DEFAULT 1, password TEXT,"
+                   "date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS api(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
+                   "api_name TEXT, api_desc TEXT, owner TEXT)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS api_permission(token_api TEXT, create_file BOOL, upload_file BOOL, "
+                   "delete_file BOOL, create_folder BOOL, delete_folder BOOL, share_file_and_folder BOOL, "
+                   "delete_share_file_and_folder BOOL, create_user BOOL, delete_user BOOL)")
 
-print("---------------------------------------------------------------------------------------------------------------")
+print(CRED +
+      "----------------------------------------------------------------------------------------------------------------"
+      "--------------------------------------------------------" + CEND
+      )
 
-con = mariadb.connect(user=db_uname, password=db_passw, host="localhost", port=3306, database=db_name)
-cursor = con.cursor()
-cursor.execute("CREATE TABLE IF NOT EXISTS user(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
-               "user_name TEXT, password TEXT, admin BOOL, work_Dir TEXT, online BOOL, last_online TEXT)")
-cursor.execute("CREATE TABLE IF NOT EXISTS log(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, name TEXT, user_ip text,"
-               "user_token TEXT, argument TEXT, log_level INT, date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
-cursor.execute("CREATE TABLE IF NOT EXISTS file_sharing(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, file_name TEXT, "
-               "file_owner text, file_short_name TEXT, login_to_show BOOL DEFAULT 1, password TEXT,"
-               "date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
-cursor.execute("CREATE TABLE IF NOT EXISTS api(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, api_name TEXT,"
-               "api_desc TEXT, owner TEXT)")
-cursor.execute("CREATE TABLE IF NOT EXISTS api_permission(token_api TEXT, create_file BOOL, upload_file BOOL, "
-               "delete_file BOOL, create_folder BOOL, delete_folder BOOL, share_file_and_folder BOOL, "
-               "delete_share_file_and_folder BOOL, create_user BOOL, delete_user BOOL)")
-salt = hashlib.sha256().hexdigest()
-cursor.execute(f'''INSERT INTO user(token, user_name, salt, password, admin, work_Dir) VALUES (?, ?, ?, ?, ?, ?)''', (
-    str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1()))), username, hashlib.sha256(), salt_password(mdp, hashlib.sha256()),
-    1, '/home/cantina-cloud/cloud/file_cloud/' + username))
 con.commit()
-os.system("mkdir /home/cantina-cloud/cloud/file_cloud/matbe /home/cantina-cloud/cloud/share/matbe")
 
-json_data = {"database": {"database_username": db_uname, "database_password": db_passw, "database_name": db_name},
-             "server": {"port": 5000}}
+
+json_data = {
+  "database": [{
+    "database_username": database_username,
+    "database_password": database_password,
+    "database_administration_name": "cantina_administration",
+    "database_cloud_name": "cantina_cloud"
+  }],
+  "port": 2001
+}
+
 with open("/home/cantina/cloud/config.json", "w") as outfile:
     outfile.write(json.dumps(json_data, indent=4))
 
-launch_startup = input("Voullez vous lancez Cantina Cloud au lancement de votre serveur?")
+launch_startup = input("Voullez vous lancez Cantina Cloud au lancement de votre serveur? ")
 os.system("touch /etc/systemd/system/cloud.service")
 os.system(f"""echo '[Unit]
 Description=Cantina Cloud
 [Service]
-User=cantina-cloud
-WorkingDirectory=/home/cantina-cloud/cloud
+User=cantina
+WorkingDirectory=/home/cantina/cloud
 ExecStart=python3 app.py
 [Install]
 WantedBy=multi-user.target' >> /etc/systemd/system/cantina-cloud.service""")
-os.system('chown cantina-cloud /home/cantina-cloud/*/*/* && chgrp cantina-cloud /home/cantina-cloud/*/*/*')
+os.system('chown cantina:cantina /home/cantina/*/*/*')
 os.system("systemctl enable cantina-cloud")
 os.system("systemctl start cantina-cloud")
-
-print("---------------------------------------------------------------------------------------------------------------")
-os.system("rm /home/cantina-cloud/cloud/installer.py")
+print(CRED +
+      "----------------------------------------------------------------------------------------------------------------"
+      "--------------------------------------------------------" + CEND
+      )
+os.system("rm /home/cantina/cloud/install.py")
 print("Nous venons de finir l'instalation de Cantina! Vous pouvez maintenant configurer votre serveur web pour qu'il "
-      "pointe sur l'ip 127.0.0.1:{}!".format(port))
+      "pointe sur l'ip 127.0.0.1:2001!")

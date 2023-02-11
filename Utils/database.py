@@ -1,4 +1,4 @@
-import mariadb
+import pymysql
 
 
 class DataBase:
@@ -12,7 +12,7 @@ class DataBase:
         self.connector = None
 
     def connection(self):
-        self.connector = mariadb.connect(user=self.user, password=self.password, host=self.host, port=self.port,
+        self.connector = pymysql.connect(user=self.user, password=self.password, host=self.host, port=self.port,
                                          database=self.database)
         self.cursor = self.connector.cursor()
 
@@ -31,7 +31,7 @@ class DataBase:
                     return "Error: Args Is Needed"
                 retry = False
                 return True
-            except mariadb.InterfaceError:
+            except pymysql.InterfaceError:
                 self.cursor.close()
                 self.connector.close()
                 self.connection()
@@ -54,7 +54,7 @@ class DataBase:
                     data = self.cursor.fetchmany(number_of_data)
                 retry = False
                 return data
-            except mariadb.InterfaceError:
+            except pymysql.InterfaceError:
                 self.cursor.close()
                 self.connector.close()
                 self.connection()
