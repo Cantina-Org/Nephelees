@@ -1,6 +1,6 @@
+import json
 import os
 import platform
-
 import mariadb
 
 CRED = '\033[91m'
@@ -89,6 +89,10 @@ if new_instance in ['Oui', 'oui', 'o']:
         cursor.execute("USE cantina_administration")
         cursor.execute("SELECT id, user_name FROM user")
         data_id = cursor.fetchall()
+
+        for i in data_id:
+            os.system("mkdir /home/cantina/cloud/file_cloud/{} /home/cantina/cloud/share/{}".format(i[1], i[1]))
+
     except Exception as e:
         exit('Une erreur est survenue lors de la récupération des utilisateur de la base de donnée: ' + str(e))
 
@@ -150,5 +154,38 @@ print(CRED +
       )
 
 con.commit()
-for i in data_id:
-    os.system("mkdir /home/cantina/cloud/file_cloud/{} /home/cantina/cloud/share/{}".format(i[1], i[1]))
+
+
+json_data = {
+  "database": [{
+    "database_username": database_username,
+    "database_password": database_password,
+    "database_administration_name": "cantina_administration",
+    "database_cloud_name": "cantina_cloud"
+  }],
+  "port": 2001
+}
+
+with open("/home/cantina/cloud/config.json", "w") as outfile:
+    outfile.write(json.dumps(json_data, indent=4))
+
+launch_startup = input("Voullez vous lancez Cantina Cloud au lancement de votre serveur? ")
+os.system("touch /etc/systemd/system/cloud.service")
+os.system(f"""echo '[Unit]
+Description=Cantina Cloud
+[Service]
+User=cantina
+WorkingDirectory=/home/cantina/cloud
+ExecStart=python3 app.py
+[Install]
+WantedBy=multi-user.target' >> /etc/systemd/system/cantina-cloud.service""")
+os.system('chown cantina:cantina /home/cantina/*/*/*')
+os.system("systemctl enable cantina-cloud")
+os.system("systemctl start cantina-cloud")
+print(CRED +
+      "----------------------------------------------------------------------------------------------------------------"
+      "--------------------------------------------------------" + CEND
+      )
+os.system("rm /home/cantina/cloud/install.py")
+print("Nous venons de finir l'instalation de Cantina! Vous pouvez maintenant configurer votre serveur web pour qu'il "
+      "pointe sur l'ip 127.0.0.1:2001!")
