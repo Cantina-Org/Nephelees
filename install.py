@@ -4,7 +4,7 @@ import os
 import platform
 import uuid
 import argon2
-import mariadb
+import pymysql.cursors
 
 
 def salt_password(passwordtohash, user_name, new_account=False):
@@ -83,7 +83,7 @@ if new_instance in ['Oui', 'oui', 'o']:
         database_password = input("    Mots de passe: ")
 
     try:
-        con = mariadb.connect(user=database_username, password=database_password, host="localhost", port=3306)
+        con = pymysql.connect(user=database_username, password=database_password, host="localhost", port=3306)
         cursor = con.cursor()
 
     except Exception as e:
@@ -145,7 +145,7 @@ elif new_instance in ['Non', 'non', 'n']:
         database_password = input("    Mots de passe: ")
 
     try:
-        con = mariadb.connect(user=database_username, password=database_password, host="localhost", port=3306)
+        con = pymysql.connect(user=database_username, password=database_password, host="localhost", port=3306)
         cursor = con.cursor()
 
     except Exception as e:
