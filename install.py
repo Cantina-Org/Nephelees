@@ -169,8 +169,8 @@ elif new_instance in ['Non', 'non', 'n']:
     cursor.execute("CREATE TABLE IF NOT EXISTS user(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT,  "
                    "user_name TEXT, salt TEXT, password TEXT, admin BOOL, work_Dir TEXT, last_online TEXT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS log(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, name TEXT,  "
-                   "user_ip text, user_token TEXT, argument TEXT, log_level INT, date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
-
+                   "user_ip text, user_token TEXT, argument TEXT, log_level INT, date TIMESTAMP NOT NULL "
+                   "DEFAULT CURRENT_TIMESTAMP)")
 
     print("Nous allons donc créer un premier compte administrateur.")
     username = input("    Nom d'utilisateur: ")
