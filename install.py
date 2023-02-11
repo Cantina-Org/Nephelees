@@ -19,7 +19,7 @@ if "Debian" in os_info.version:
     os.system("sudo addgroup cantina")
 else:
     distrib_check = input(
-        "Votre système est:\n     1: Basé sur Debian\n     2: Basé sur Arch\n     3: Basé sur Red Hat")
+        "Votre système est:\n     1: Basé sur Debian\n     2: Basé sur Arch\n     3: Basé sur Red Hat\n")
     while distrib_check not in ["1", "2", "3"]:
         print("Merci de répondre uniquement par 1, 2 ou 3!")
         distrib_check = input(
@@ -41,28 +41,29 @@ os.system("pip install Flask")
 
 print(CRED +
       "----------------------------------------------------------------------------------------------------------------"
-      "------" + CEND
+      "----------------------------------------------------------------------------------------------------------------"
+      + CEND
       )
 
-new_instance = input("Avez vous déjà installé sur ce serveur une projet Cantina?")
+new_instance = input("Avez vous déjà installé sur ce serveur une projet Cantina? ")
 while new_instance not in ['Oui', 'oui', 'o', 'Non', 'non', 'n']:
     print("Les réponses valides sont: 'Oui', 'oui', 'o' ou 'Non', 'non', 'n'")
-    new_instance = input("Avez vous déjà installé sur ce serveur une projet Cantina?")
+    new_instance = input("Avez vous déjà installé un projet Cantina sur ce serveur? ")
 
-if new_instance in ['Non', 'non', 'n']:
+if new_instance in ['Oui', 'oui', 'o']:
     print("Déjà des trucs")
-elif new_instance in ['Oui', 'oui', 'o']:
-    database_created = input("Avez-vous créer les base de donnée? (cantina-administration, cantina-cloud)")
+elif new_instance in ['Non', 'non', 'n']:
+    database_created = input("Avez-vous créer les base de donnée? (cantina-administration, cantina-cloud) ")
     while database_created not in ['Oui', 'oui', 'o', 'Non', 'non', 'n']:
         print("Les réponses valides sont: 'Oui', 'oui', 'o' ou 'Non', 'non', 'n'")
-        database_created = input("Avez-vous créer les base de donnée? (cantina-administration, cantina-cloud)")
+        database_created = input("Avez-vous créer les base de donnée? (cantina-administration, cantina-cloud) ")
 
     if database_created in ['Non', 'non', 'n']:
         exit("Merci de créer les bases de données!")
     elif database_created in ['Oui', 'oui', 'o']:
         pass
 
-    print("Identifiants de connexion aux bases de données:")
+    print("Identifiants de connexion aux bases de données: ")
     database_username = input("    Nom d'utilisateur: ")
     database_password = input("    Mots de passe: ")
 
@@ -74,6 +75,7 @@ elif new_instance in ['Oui', 'oui', 'o']:
 
 print(CRED +
       "----------------------------------------------------------------------------------------------------------------"
-      "------" + CEND
+      "----------------------------------------------------------------------------------------------------------------"
+      + CEND
       )
 
