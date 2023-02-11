@@ -166,17 +166,18 @@ elif new_instance in ['Non', 'non', 'n']:
 
     cursor.execute("USE cantina_administration")
 
-    cursor.execute("CREATE TABLE IF NOT EXISTS user(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
-                   "user_name TEXT, password TEXT, admin BOOL, work_Dir TEXT, online BOOL, last_online TEXT)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS log(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, name TEXT, user_ip text,"
-                   "user_token TEXT, argument TEXT, log_level INT, date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS user(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT,  "
+                   "user_name TEXT, salt TEXT, password TEXT, admin BOOL, work_Dir TEXT, last_online TEXT)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS log(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, name TEXT,  "
+                   "user_ip text, user_token TEXT, argument TEXT, log_level INT, date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+
 
     print("Nous allons donc créer un premier compte administrateur.")
     username = input("    Nom d'utilisateur: ")
     mdp = input("    Mots de passe: ")
 
     salt = hashlib.sha256().hexdigest()
-    cursor.execute(f"""INSERT INTO user(token, user_name, salt, password, admin, work_Dir) VALUES (?, ?, ?, ?, ?, ?)
+    cursor.execute(f"""INSERT INTO user(token, user_name, salt, password, admin, work_Dir) VALUES (%s, %s, %s, %s, %s, %s)
         """, (str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1()))), username, salt,
               salt_password(mdp, salt, new_account=True), 1, '/home/cantina/cloud/file_cloud/' + username))
 
