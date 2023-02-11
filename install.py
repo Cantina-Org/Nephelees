@@ -1,7 +1,24 @@
+import hashlib
 import json
 import os
 import platform
+import uuid
+import argon2
 import mariadb
+
+
+def salt_password(passwordtohash, user_name, new_account=False):
+    try:
+        if not new_account:
+            pass
+        else:
+            passw = hashlib.sha256(argon2.argon2_hash(passwordtohash, user_name)).hexdigest().encode()
+            return passw
+
+    except AttributeError as e:
+        print(e)
+        return None
+
 
 CRED = '\033[91m'
 CEND = '\033[0m'
@@ -147,6 +164,31 @@ elif new_instance in ['Non', 'non', 'n']:
         exit("Merci de créer les bases de données!\n cantina_administration: " + str(database[0]) +
              "\ncantina_cloud: " + str(database[1]))
 
+    cursor.execute("USE cantina_administration")
+
+    cursor.execute("CREATE TABLE IF NOT EXISTS user(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
+                   "user_name TEXT, password TEXT, admin BOOL, work_Dir TEXT, online BOOL, last_online TEXT)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS log(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, name TEXT, user_ip text,"
+                   "user_token TEXT, argument TEXT, log_level INT, date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+
+    print("Nous allons donc créer un premier compte administrateur.")
+    username = input("    Nom d'utilisateur: ")
+    mdp = input("    Mots de passe: ")
+
+    salt = hashlib.sha256().hexdigest()
+    cursor.execute(f"""INSERT INTO user(token, user_name, salt, password, admin, work_Dir) VALUES (?, ?, ?, ?, ?, ?)
+        """, (str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1()))), username, salt,
+              salt_password(mdp, salt, new_account=True), 1, '/home/cantina/cloud/file_cloud/' + username))
+
+    cursor.execute("USE cantina_cloud")
+    cursor.execute("CREATE TABLE IF NOT EXISTS file_sharing(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, file_name TEXT,"
+                   " file_owner text, file_short_name TEXT, login_to_show BOOL DEFAULT 1, password TEXT,"
+                   "date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS api(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
+                   "api_name TEXT, api_desc TEXT, owner TEXT)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS api_permission(token_api TEXT, create_file BOOL, upload_file BOOL, "
+                   "delete_file BOOL, create_folder BOOL, delete_folder BOOL, share_file_and_folder BOOL, "
+                   "delete_share_file_and_folder BOOL, create_user BOOL, delete_user BOOL)")
 
 print(CRED +
       "----------------------------------------------------------------------------------------------------------------"
