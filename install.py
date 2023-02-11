@@ -1,10 +1,14 @@
 import os
 import platform
 
+import mariadb
+
 CRED = '\033[91m'
 CEND = '\033[0m'
+CWAR = '\033[93m'
 based_on = None
 os_info = platform.uname()
+database = [False, False]
 
 if os.getuid() != 0:
     exit("L'installation doit être faite avec les permissions d'administrateur!")
@@ -41,8 +45,7 @@ os.system("pip install Flask")
 
 print(CRED +
       "----------------------------------------------------------------------------------------------------------------"
-      "----------------------------------------------------------------------------------------------------------------"
-      + CEND
+      "--------------------------------------------------------" + CEND
       )
 
 new_instance = input("Avez vous déjà installé sur ce serveur une projet Cantina? ")
@@ -51,7 +54,55 @@ while new_instance not in ['Oui', 'oui', 'o', 'Non', 'non', 'n']:
     new_instance = input("Avez vous déjà installé un projet Cantina sur ce serveur? ")
 
 if new_instance in ['Oui', 'oui', 'o']:
-    print("Déjà des trucs")
+    print(CRED + "ATTENTION: " + CWAR + " si vous n'avez pas encore d'instance Cantina sur ce serveur, vous ne pourrez "
+                                        "pas utiliser Cantina Cloud car aucun utilisateur ne sera créé!" + CEND)
+    print("Identifiants de connexion aux bases de données: ")
+    database_username = input("    Nom d'utilisateur: ")
+    database_password = input("    Mots de passe: ")
+
+    while database_password == '' or database_username == '':
+        print("Merci de rentrer des valeurs!")
+        database_username = input("    Nom d'utilisateur: ")
+        database_password = input("    Mots de passe: ")
+
+    try:
+        con = mariadb.connect(user=database_username, password=database_password, host="localhost", port=3306)
+        cursor = con.cursor()
+
+    except Exception as e:
+        exit("Un problème est apparue lors de la connexion à Mariadb: " + str(e))
+
+    cursor.execute("""SHOW DATABASES""")
+    data = cursor.fetchall()
+
+    for i in data:
+        if i[0] == 'cantina_administration':
+            database[0] = True
+        elif i[0] == 'cantina_cloud':
+            database[1] = True
+
+    if not database[0] or not database[1]:
+        exit("Merci de créer les bases de données!\n cantina_administration: " + str(database[0]) +
+             "\ncantina_cloud: " + str(database[1]))
+
+    try:
+        cursor.execute("USE cantina_administration")
+        cursor.execute("SELECT id, user_name FROM user")
+        data_id = cursor.fetchall()
+    except Exception as e:
+        exit('Une erreur est survenue lors de la récupération des utilisateur de la base de donnée: ' + str(e))
+
+    cursor.execute("USE cantina_cloud")
+    cursor.execute("CREATE TABLE IF NOT EXISTS file_sharing(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, file_name TEXT,"
+                   " file_owner text, file_short_name TEXT, login_to_show BOOL DEFAULT 1, password TEXT,"
+                   "date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS api(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
+                   "api_name TEXT, api_desc TEXT, owner TEXT)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS api_permission(token_api TEXT, create_file BOOL, upload_file BOOL, "
+                   "delete_file BOOL, create_folder BOOL, delete_folder BOOL, share_file_and_folder BOOL, "
+                   "delete_share_file_and_folder BOOL, create_user BOOL, delete_user BOOL)")
+
+
 elif new_instance in ['Non', 'non', 'n']:
     database_created = input("Avez-vous créer les base de donnée? (cantina-administration, cantina-cloud) ")
     while database_created not in ['Oui', 'oui', 'o', 'Non', 'non', 'n']:
@@ -72,10 +123,32 @@ elif new_instance in ['Non', 'non', 'n']:
         database_username = input("    Nom d'utilisateur: ")
         database_password = input("    Mots de passe: ")
 
+    try:
+        con = mariadb.connect(user=database_username, password=database_password, host="localhost", port=3306)
+        cursor = con.cursor()
+
+    except Exception as e:
+        exit("Un problème est apparue lors de la connexion à Mariadb: " + str(e))
+
+    cursor.execute("""SHOW DATABASES""")
+    data = cursor.fetchall()
+
+    for i in data:
+        if i[0] == 'cantina_administration':
+            database[0] = True
+        elif i[0] == 'cantina_cloud':
+            database[1] = True
+
+    if not database[0] or not database[1]:
+        exit("Merci de créer les bases de données!\n cantina_administration: " + str(database[0]) +
+             "\ncantina_cloud: " + str(database[1]))
+
 
 print(CRED +
       "----------------------------------------------------------------------------------------------------------------"
-      "----------------------------------------------------------------------------------------------------------------"
-      + CEND
+      "--------------------------------------------------------" + CEND
       )
 
+con.commit()
+for i in data_id:
+    os.system("mkdir /home/cantina/cloud/file_cloud/{} /home/cantina/cloud/share/{}".format(i[1], i[1]))
