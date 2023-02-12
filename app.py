@@ -85,7 +85,7 @@ database_administration.connection()
 database_cloud.connection()
 
 # Creation des tables des bases données
-database_administration.create_table("CREATE TABLE IF NOT EXISTS user(ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT, "
+database_administration.create_table("CREATE TABLE IF NOT EXISTS user(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, "
                                      "token TEXT,  user_name TEXT, salt TEXT, password TEXT, admin BOOL, "
                                      "work_Dir TEXT, last_online TEXT)")
 database_administration.create_table("CREATE TABLE IF NOT EXISTS log(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, "
