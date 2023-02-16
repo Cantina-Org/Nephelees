@@ -115,7 +115,7 @@ def home():
 
 
 # Fonction permettant de voire les fichiers de Cantina Cloud
-@app.route('/my/file/')
+@app.route('/file/')
 def file():
     global filenames, lastPath, fd
     actual_path, lastPath, rand_name = '/', '/', ''
@@ -180,7 +180,7 @@ def file():
             os.remove(dir_path + actual_path + args.get('workFile'))
         elif not row[1]:
             os.remove(row[0] + '/' + actual_path + args.get('workFile'))
-        return render_template("redirect/r-myfile.html", path="/my/file/?path=" + actual_path, lastPath=lastPath)
+        return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "createFile" and args.get('workFile'):
         if row[1]:
@@ -188,7 +188,7 @@ def file():
         elif not row[1]:
             fd = os.open(row[0] + '/' + args.get('path') + "/" + args.get('workFile'), os.O_RDWR | os.O_CREAT)
         os.close(fd)
-        return render_template("redirect/r-myfile.html", path="/my/file/?path=" + actual_path, lastPath=lastPath)
+        return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "cloneRepo" and args.get('repoLink'):
         if row[1]:
@@ -196,7 +196,7 @@ def file():
         elif not row[1]:
             os.system("cd " + row[0] + '/' + args.get('path') + "/ && git clone " + args.get('repoLink'))
 
-        return render_template("redirect/r-myfile.html", path="/my/file/%spath=" + actual_path, lastPath=lastPath)
+        return render_template("redirect/r-myfile.html", path="/file/%spath=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "pullRepo" and git_repo:
         if row[1]:
@@ -204,7 +204,7 @@ def file():
         elif not row[1]:
             os.system("cd " + row[0] + '/' + args.get('path') + "/ && git pull")
 
-        return render_template("redirect/r-myfile.html", path="/my/file/?path=" + actual_path, lastPath=lastPath)
+        return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "deleteFolder" and args.get('workFile') and args.get('workFile') in work_dir:
         if row[1]:
@@ -212,14 +212,14 @@ def file():
         elif not row[1]:
             shutil.rmtree(row[0] + '/' + actual_path + args.get('workFile'))
 
-        return render_template("redirect/r-myfile.html", path="/my/file/?path=" + actual_path)
+        return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path)
 
     elif args.get('action') == "createFolder" and args.get('workFile'):
         if row[1]:
             os.mkdir(dir_path + actual_path + args.get('workFile'))
         elif not row[1]:
             os.mkdir(row[0] + '/' + actual_path + args.get('workFile'))
-        return render_template("redirect/r-myfile.html", path="/my/file/?path=" + actual_path, lastPath=lastPath)
+        return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "shareFile" and args.get('workFile') and args.get('loginToShow'):
         if row[1]:
@@ -242,7 +242,7 @@ def file():
                                    salt_password(args.get('password'), row[2])))
 
         return render_template("redirect/r-myfile-clipboardcopy.html", short_name=rand_name,
-                               path="/my/file/?path=" + actual_path)
+                               path="/file/?path=" + actual_path)
 
     elif args.get('action') == "shareFolder" and args.get('workFolder') and args.get('loginToShow'):
         if row[1]:
@@ -256,7 +256,7 @@ def file():
                                                    args.get('loginToShow'),
                                                    salt_password(args.get('password'), row[2])))
         return render_template("redirect/r-myfile-clipboardcopy.html", short_name=rand_name,
-                               path="/my/file/?path=" + actual_path)
+                               path="/file/?path=" + actual_path)
 
     else:
         return render_template('myfile.html', dir=work_dir, file=work_file_in_dir, path=args.get('path') + "/",
@@ -264,7 +264,7 @@ def file():
 
 
 # Fonction permettant d'upload un fichier dans le dossier dans lequelle on est
-@app.route('/my/file/upload', methods=['GET', 'POST'])
+@app.route('/file/upload', methods=['GET', 'POST'])
 def upload_file():
     args = request.args
 
@@ -293,7 +293,7 @@ def upload_file():
 
 
 # Fonction permettant de télécharger le fichier sélectionné
-@app.route('/my/file/download')
+@app.route('/file/download')
 def download_file():
     args = request.args
 
@@ -440,9 +440,10 @@ def admin_add_user():
 
                         database_administration.insert('''INSERT INTO user(token, user_name, salt, password, admin, 
                         work_Dir) VALUES (%s, %s, %s, %s, %s, %s)''', (new_uuid, request.form['uname'], new_salt,
-                                                                 salt_password(request.form['pword2'], new_salt,
-                                                                               new_account=True), admin, dir_path +
-                                                                 '/' + secure_filename(request.form['uname'])))
+                                                                       salt_password(request.form['pword2'], new_salt,
+                                                                                     new_account=True), admin,
+                                                                       dir_path +
+                                                                       '/' + secure_filename(request.form['uname'])))
 
                     except Exception as e:
                         make_log('Error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
@@ -556,11 +557,12 @@ def admin_add_api():
                                    request.cookies.get('userID')))
             database_cloud.insert('''INSERT INTO api_permission(token_api, create_file, upload_file, delete_file, 
             create_folder, delete_folder, share_file_and_folder, delete_share_file_and_folder, create_user, 
-            delete_user) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''', (new_uuid, api_create_file, api_upload_file,
-                                                                    api_delete_file, api_create_folder,
-                                                                    api_delete_folder, api_share_file_folder,
-                                                                    api_delete_share_file_folder, api_create_user,
-                                                                    api_delete_user))
+            delete_user) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
+                                  (new_uuid, api_create_file, api_upload_file,
+                                   api_delete_file, api_create_folder,
+                                   api_delete_folder, api_share_file_folder,
+                                   api_delete_share_file_folder, api_create_user,
+                                   api_delete_user))
 
             make_log('add_api', request.remote_addr, request.cookies.get('userID'), 2,
                      'Created API token: ' + new_uuid)
@@ -642,8 +644,8 @@ def add_user_api():
 
             database_administration.insert('''INSERT INTO user(token, user_name, salt, password, admin, work_Dir) 
                             VALUES (%s, %s, %s, %s, %s, %s)''', (new_uuid, escape(content['username']), new_salt,
-                                                           salt_password(content['password'], new_salt), admin,
-                                                           dir_path + '/' + secure_filename(content['username'])))
+                                                                 salt_password(content['password'], new_salt), admin,
+                                                                 dir_path + '/' + secure_filename(content['username'])))
             make_log('add_user_api', request.remote_addr, request.cookies.get('userID'), 4,
                      'Created User token: ' + new_uuid, escape(content['api-token']))
             return jsonify({
