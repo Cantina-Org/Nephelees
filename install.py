@@ -1,10 +1,10 @@
-import hashlib
-import json
-import os
-import platform
-import uuid
-import argon2
-import pymysql.cursors
+from hashlib import sha256
+from json import dumps
+from os import system, getuid
+from platform import uname
+from uuid import uuid1, uuid3
+from argon2 import argon2_hash
+from pymysql import connect
 
 
 def salt_password(passwordtohash, user_name, new_account=False):
@@ -12,7 +12,7 @@ def salt_password(passwordtohash, user_name, new_account=False):
         if not new_account:
             pass
         else:
-            passw = hashlib.sha256(argon2.argon2_hash(passwordtohash, user_name)).hexdigest().encode()
+            passw = sha256(argon2_hash(passwordtohash, user_name)).hexdigest().encode()
             return passw
 
     except AttributeError as e:
@@ -24,10 +24,10 @@ CRED = '\033[91m'
 CEND = '\033[0m'
 CWAR = '\033[93m'
 based_on = None
-os_info = platform.uname()
+os_info = uname()
 database = [False, False]
 
-if os.getuid() != 0:
+if getuid() != 0:
     exit("L'installation doit être faite avec les permissions d'administrateur!")
 elif os_info.system != "Linux":
     exit("L'installation doit être faire sur une système linux!")
@@ -36,8 +36,8 @@ print("Bienvenue dans l'installation de Cantina Cloud!")
 
 if "Debian" in os_info.version:
     print("Système Debian détecter.")
-    os.system("sudo adduser cantina --system")
-    os.system("sudo addgroup cantina")
+    system("sudo adduser cantina --system")
+    system("sudo addgroup cantina")
 else:
     distrib_check = input(
         "Votre système est:\n     1: Basé sur Debian\n     2: Basé sur Arch\n     3: Basé sur Red Hat\n")
@@ -47,18 +47,18 @@ else:
             "Votre système est:\n     1: Basé sur Debian\n     2: Basé sur Arch\n     3: Basé sur Red Hat")
 
     if distrib_check == "1" or distrib_check == "3":
-        os.system("sudo adduser cantina --system")
-        os.system("sudo addgroup cantina")
+        system("sudo adduser cantina --system")
+        system("sudo addgroup cantina")
     elif distrib_check == "2":
-        os.system("sudo useradd cantina")
-        os.system("sudo groupadd cantina")
+        system("sudo useradd cantina")
+        system("sudo groupadd cantina")
     else:
         exit("Vous avez cassé notre système :/")
 
-os.system("sudo usermod -a -G cantina cantina")
-os.system("git clone https://github.com/Cantina-Org/Cloud /home/cantina/cloud")
-os.system("mkdir /home/cantina/cloud/file_cloud /home/cantina/cloud/share")
-os.system("pip install Flask")
+system("sudo usermod -a -G cantina cantina")
+system("git clone https://github.com/Cantina-Org/Cloud /home/cantina/cloud")
+system("mkdir /home/cantina/cloud/file_cloud /home/cantina/cloud/share")
+system("pip install Flask")
 
 print(CRED +
       "----------------------------------------------------------------------------------------------------------------"
@@ -83,7 +83,7 @@ if new_instance in ['Oui', 'oui', 'o']:
         database_password = input("    Mots de passe: ")
 
     try:
-        con = pymysql.connect(user=database_username, password=database_password, host="localhost", port=3306)
+        con = connect(user=database_username, password=database_password, host="localhost", port=3306)
         cursor = con.cursor()
 
     except Exception as e:
@@ -108,7 +108,7 @@ if new_instance in ['Oui', 'oui', 'o']:
         data_id = cursor.fetchall()
 
         for i in data_id:
-            os.system("mkdir /home/cantina/cloud/file_cloud/{} /home/cantina/cloud/share/{}".format(i[1], i[1]))
+            system("mkdir /home/cantina/cloud/file_cloud/{} /home/cantina/cloud/share/{}".format(i[1], i[1]))
 
     except Exception as e:
         exit('Une erreur est survenue lors de la récupération des utilisateur de la base de donnée: ' + str(e))
@@ -145,7 +145,7 @@ elif new_instance in ['Non', 'non', 'n']:
         database_password = input("    Mots de passe: ")
 
     try:
-        con = pymysql.connect(user=database_username, password=database_password, host="localhost", port=3306)
+        con = connect(user=database_username, password=database_password, host="localhost", port=3306)
         cursor = con.cursor()
 
     except Exception as e:
@@ -176,9 +176,9 @@ elif new_instance in ['Non', 'non', 'n']:
     username = input("    Nom d'utilisateur: ")
     mdp = input("    Mots de passe: ")
 
-    salt = hashlib.sha256().hexdigest()
-    cursor.execute(f"""INSERT INTO user(token, user_name, salt, password, admin, work_Dir) VALUES (%s, %s, %s, %s, %s, %s)
-        """, (str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1()))), username, salt,
+    salt = sha256().hexdigest()
+    cursor.execute(f"""INSERT INTO user(token, user_name, salt, password, admin, work_Dir) VALUES (%s, %s, %s, %s, %s, 
+    %s) """, (str(uuid3(uuid1(), str(uuid1()))), username, salt,
               salt_password(mdp, salt, new_account=True), 1, '/home/cantina/cloud/file_cloud/' + username))
 
     cursor.execute("USE cantina_cloud")
@@ -210,11 +210,11 @@ json_data = {
 }
 
 with open("/home/cantina/cloud/config.json", "w") as outfile:
-    outfile.write(json.dumps(json_data, indent=4))
+    outfile.write(dumps(json_data, indent=4))
 
 launch_startup = input("Voullez vous lancez Cantina Cloud au lancement de votre serveur? ")
-os.system("touch /etc/systemd/system/cloud.service")
-os.system(f"""echo '[Unit]
+system("touch /etc/systemd/system/cloud.service")
+system(f"""echo '[Unit]
 Description=Cantina Cloud
 [Service]
 User=cantina
@@ -222,13 +222,13 @@ WorkingDirectory=/home/cantina/cloud
 ExecStart=python3 app.py
 [Install]
 WantedBy=multi-user.target' >> /etc/systemd/system/cantina-cloud.service""")
-os.system('chown cantina:cantina /home/cantina/*/*/*')
-os.system("systemctl enable cantina-cloud")
-os.system("systemctl start cantina-cloud")
+system('chown cantina:cantina /home/cantina/*/*/*')
+system("systemctl enable cantina-cloud")
+system("systemctl start cantina-cloud")
 print(CRED +
       "----------------------------------------------------------------------------------------------------------------"
       "--------------------------------------------------------" + CEND
       )
-os.system("rm /home/cantina/cloud/install.py")
+system("rm /home/cantina/cloud/install.py")
 print("Nous venons de finir l'instalation de Cantina! Vous pouvez maintenant configurer votre serveur web pour qu'il "
       "pointe sur l'ip 127.0.0.1:2001!")
