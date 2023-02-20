@@ -44,7 +44,7 @@ else:
     while distrib_check not in ["1", "2", "3"]:
         print("Merci de répondre uniquement par 1, 2 ou 3!")
         distrib_check = input(
-            "Votre système est:\n     1: Basé sur Debian\n     2: Basé sur Arch\n     3: Basé sur Red Hat")
+            "Votre système est:\n     1: Basé sur Debian\n     2: Basé sur Arch\n     3: Basé sur Red Hat\n")
 
     if distrib_check == "1" or distrib_check == "3":
         system("sudo adduser cantina --system")
@@ -58,7 +58,7 @@ else:
 system("sudo usermod -a -G cantina cantina")
 system("git clone https://github.com/Cantina-Org/Cloud /home/cantina/cloud")
 system("mkdir /home/cantina/cloud/file_cloud /home/cantina/cloud/share")
-system("pip install Flask")
+system("python -m pip install -r requirements.txt")
 
 print(CRED +
       "----------------------------------------------------------------------------------------------------------------"
