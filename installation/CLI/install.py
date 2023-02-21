@@ -229,6 +229,6 @@ print(CRED +
       "----------------------------------------------------------------------------------------------------------------"
       "--------------------------------------------------------" + CEND
       )
-system("rm /home/cantina/cloud/install.py")
+system("rm -r /home/cantina/cloud/installation")
 print("Nous venons de finir l'instalation de Cantina! Vous pouvez maintenant configurer votre serveur web pour qu'il "
       "pointe sur l'ip 127.0.0.1:2001!")

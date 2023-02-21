@@ -1,10 +1,10 @@
 from hashlib import sha256
 from json import dumps
-from os import system, getuid
-from platform import uname
+from os import system
 from uuid import uuid1, uuid3
 from argon2 import argon2_hash
 from pymysql import connect
+from json import load
 
 
 def salt_password(passwordtohash, user_name, new_account=False):
@@ -15,8 +15,8 @@ def salt_password(passwordtohash, user_name, new_account=False):
             passw = sha256(argon2_hash(passwordtohash, user_name)).hexdigest().encode()
             return passw
 
-    except AttributeError as e:
-        print(e)
+    except AttributeError as error:
+        print(error)
         return None
 
 
@@ -24,37 +24,14 @@ CRED = '\033[91m'
 CEND = '\033[0m'
 CWAR = '\033[93m'
 based_on = None
-os_info = uname()
 database = [False, False]
+with open("config.json") as conf_file:
+    config_data = load(conf_file)
 
-if getuid() != 0:
-    exit("L'installation doit être faite avec les permissions d'administrateur!")
-elif os_info.system != "Linux":
-    exit("L'installation doit être faire sur une système linux!")
+print("Bienvenue dans l'installation de Cantina Cloud via Docker!")
 
-print("Bienvenue dans l'installation de Cantina Cloud!")
-
-if "Debian" in os_info.version:
-    print("Système Debian détecter.")
-    system("sudo adduser cantina --system")
-    system("sudo addgroup cantina")
-else:
-    distrib_check = input(
-        "Votre système est:\n     1: Basé sur Debian\n     2: Basé sur Arch\n     3: Basé sur Red Hat\n")
-    while distrib_check not in ["1", "2", "3"]:
-        print("Merci de répondre uniquement par 1, 2 ou 3!")
-        distrib_check = input(
-            "Votre système est:\n     1: Basé sur Debian\n     2: Basé sur Arch\n     3: Basé sur Red Hat\n")
-
-    if distrib_check == "1" or distrib_check == "3":
-        system("sudo adduser cantina --system")
-        system("sudo addgroup cantina")
-    elif distrib_check == "2":
-        system("sudo useradd cantina")
-        system("sudo groupadd cantina")
-    else:
-        exit("Vous avez cassé notre système :/")
-
+system("sudo adduser cantina --system")
+system("sudo addgroup cantina")
 system("sudo usermod -a -G cantina cantina")
 system("git clone https://github.com/Cantina-Org/Cloud /home/cantina/cloud")
 system("mkdir /home/cantina/cloud/file_cloud /home/cantina/cloud/share")
@@ -65,27 +42,18 @@ print(CRED +
       "--------------------------------------------------------" + CEND
       )
 
-new_instance = input("Avez vous déjà installé sur ce serveur une projet Cantina? ")
-while new_instance not in ['Oui', 'oui', 'o', 'Non', 'non', 'n']:
-    print("Les réponses valides sont: 'Oui', 'oui', 'o' ou 'Non', 'non', 'n'")
-    new_instance = input("Avez vous déjà installé un projet Cantina sur ce serveur? ")
 
-if new_instance in ['Oui', 'oui', 'o']:
+if not config_data['new_instance']:
     print(CRED + "ATTENTION: " + CWAR + " si vous n'avez pas encore d'instance Cantina sur ce serveur, vous ne pourrez "
                                         "pas utiliser Cantina Cloud car aucun utilisateur ne sera créé!" + CEND)
     print("Identifiants de connexion aux bases de données: ")
-    database_username = input("    Nom d'utilisateur: ")
-    database_password = input("    Mots de passe: ")
-
-    while database_password == '' or database_username == '':
-        print("Merci de rentrer des valeurs!")
-        database_username = input("    Nom d'utilisateur: ")
-        database_password = input("    Mots de passe: ")
+    print("    Nom d'utilisateur: " + config_data['database'][0]['database_username'])
+    print("    Mots de passe: " + config_data['database'][0]['database_password'])
 
     try:
-        con = connect(user=database_username, password=database_password, host="localhost", port=3306)
+        con = connect(user=config_data['database'][0]['database_username'],
+                      password=config_data['database'][0]['database_password'], host="localhost", port=3306)
         cursor = con.cursor()
-
     except Exception as e:
         exit("Un problème est apparue lors de la connexion à Mariadb: " + str(e))
 
@@ -124,30 +92,15 @@ if new_instance in ['Oui', 'oui', 'o']:
                    "delete_share_file_and_folder BOOL, create_user BOOL, delete_user BOOL)")
 
 
-elif new_instance in ['Non', 'non', 'n']:
-    database_created = input("Avez-vous créer les base de donnée? (cantina-administration, cantina-cloud) ")
-    while database_created not in ['Oui', 'oui', 'o', 'Non', 'non', 'n']:
-        print("Les réponses valides sont: 'Oui', 'oui', 'o' ou 'Non', 'non', 'n'")
-        database_created = input("Avez-vous créer les base de donnée? (cantina-administration, cantina-cloud) ")
-
-    if database_created in ['Non', 'non', 'n']:
-        exit("Merci de créer les bases de données!")
-    elif database_created in ['Oui', 'oui', 'o']:
-        pass
-
+elif config_data['new_instance']:
     print("Identifiants de connexion aux bases de données: ")
-    database_username = input("    Nom d'utilisateur: ")
-    database_password = input("    Mots de passe: ")
-
-    while database_password == '' or database_username == '':
-        print("Merci de rentrer des valeurs!")
-        database_username = input("    Nom d'utilisateur: ")
-        database_password = input("    Mots de passe: ")
+    print("    Nom d'utilisateur: " + config_data['database'][0]['database_username'])
+    print("    Mots de passe: " + config_data['database'][0]['database_password'])
 
     try:
-        con = connect(user=database_username, password=database_password, host="localhost", port=3306)
+        con = connect(user=config_data['database'][0]['database_username'],
+                      password=config_data['database'][0]['database_password'], host="localhost", port=3306)
         cursor = con.cursor()
-
     except Exception as e:
         exit("Un problème est apparue lors de la connexion à Mariadb: " + str(e))
 
@@ -172,14 +125,15 @@ elif new_instance in ['Non', 'non', 'n']:
                    "user_ip text, user_token TEXT, argument TEXT, log_level INT, date TIMESTAMP NOT NULL "
                    "DEFAULT CURRENT_TIMESTAMP)")
 
-    print("Nous allons donc créer un premier compte administrateur.")
-    username = input("    Nom d'utilisateur: ")
-    mdp = input("    Mots de passe: ")
+    print("Identifiants de connexion à Cantina Cloud: ")
+    print("    Nom d'utilisateur: " + config_data['admin_user'][0]['admin_username'])
+    print("    Mots de passe: " + config_data['admin_user'][0]['admin_password'])
 
     salt = sha256().hexdigest()
     cursor.execute(f"""INSERT INTO user(token, user_name, salt, password, admin, work_Dir) VALUES (%s, %s, %s, %s, %s, 
-    %s) """, (str(uuid3(uuid1(), str(uuid1()))), username, salt,
-              salt_password(mdp, salt, new_account=True), 1, '/home/cantina/cloud/file_cloud/' + username))
+    %s) """, (str(uuid3(uuid1(), str(uuid1()))), config_data['admin_user'][0]['admin_username'], salt,
+              salt_password(config_data['admin_user'][0]['admin_password'], salt, new_account=True), 1,
+              '/home/cantina/cloud/file_cloud/' + config_data['admin_user'][0]['admin_username']))
 
     cursor.execute("USE cantina_cloud")
     cursor.execute("CREATE TABLE IF NOT EXISTS file_sharing(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, file_name TEXT,"
@@ -198,11 +152,10 @@ print(CRED +
 
 con.commit()
 
-
 json_data = {
   "database": [{
-    "database_username": database_username,
-    "database_password": database_password,
+    "database_username": config_data['database'][0]['database_username'],
+    "database_password": config_data['database'][0]['database_password'],
     "database_administration_name": "cantina_administration",
     "database_cloud_name": "cantina_cloud"
   }],
