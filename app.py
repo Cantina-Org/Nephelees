@@ -177,40 +177,43 @@ def file():
 
     elif args.get('action') == "deleteFile" and args.get('workFile') and args.get('workFile') in filenames:
         if row[1]:
-            os.remove(dir_path + actual_path + args.get('workFile'))
+            os.remove(secure_filename(dir_path + actual_path + args.get('workFile')))
         elif not row[1]:
-            os.remove(row[0] + '/' + actual_path + args.get('workFile'))
+            os.remove(secure_filename(row[0] + '/' + actual_path + args.get('workFile')))
         return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "createFile" and args.get('workFile'):
         if row[1]:
-            fd = os.open(dir_path + args.get('path') + "/" + args.get('workFile'), os.O_RDWR | os.O_CREAT)
+            fd = os.open(secure_filename(dir_path + args.get('path') + "/" + args.get('workFile')),
+                         os.O_RDWR | os.O_CREAT)
         elif not row[1]:
-            fd = os.open(row[0] + '/' + args.get('path') + "/" + args.get('workFile'), os.O_RDWR | os.O_CREAT)
+            fd = os.open(secure_filename(row[0] + '/' + args.get('path') + "/" + args.get('workFile')),
+                         os.O_RDWR | os.O_CREAT)
         os.close(fd)
         return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "cloneRepo" and args.get('repoLink'):
         if row[1]:
-            os.system("cd " + dir_path + args.get('path') + "/ && git clone " + args.get('repoLink'))
+            os.system("cd " + secure_filename(dir_path + args.get('path')) + "/ && git clone " + args.get('repoLink'))
         elif not row[1]:
-            os.system("cd " + row[0] + '/' + args.get('path') + "/ && git clone " + args.get('repoLink'))
+            os.system("cd " + secure_filename(row[0] + '/' + args.get('path')) + "/ && git clone " +
+                      args.get('repoLink'))
 
         return render_template("redirect/r-myfile.html", path="/file/%spath=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "pullRepo" and git_repo:
         if row[1]:
-            os.system("cd " + dir_path + args.get('path') + "/ && git pull")
+            os.system("cd " + secure_filename(dir_path + args.get('path')) + "/ && git pull")
         elif not row[1]:
-            os.system("cd " + row[0] + '/' + args.get('path') + "/ && git pull")
+            os.system("cd " + secure_filename(row[0] + '/' + args.get('path')) + "/ && git pull")
 
         return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "deleteFolder" and args.get('workFile') and args.get('workFile') in work_dir:
         if row[1]:
-            shutil.rmtree(dir_path + actual_path + "/" + args.get('workFile'))
+            shutil.rmtree(secure_filename(dir_path + actual_path + "/" + args.get('workFile')))
         elif not row[1]:
-            shutil.rmtree(row[0] + '/' + actual_path + args.get('workFile'))
+            shutil.rmtree(secure_filename(row[0] + '/' + actual_path + args.get('workFile')))
 
         return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path)
 
@@ -223,11 +226,11 @@ def file():
 
     elif args.get('action') == "shareFile" and args.get('workFile') and args.get('loginToShow'):
         if row[1]:
-            shutil.copy2(dir_path + actual_path + args.get('workFile'),
-                         share_path + '/' + row[2] + '/' + args.get('workFile'))
+            shutil.copy2(secure_filename(dir_path + actual_path + args.get('workFile')),
+                         secure_filename(share_path + '/' + row[2] + '/' + args.get('workFile')))
         elif not row[1]:
-            shutil.copy2(row[0] + '/' + actual_path + args.get('workFile'),
-                         share_path + row[2] + '/' + args.get('workFile'))
+            shutil.copy2(secure_filename(row[0] + '/' + actual_path + args.get('workFile')),
+                         secure_filename(share_path + row[2] + '/' + args.get('workFile')))
         if args.get('loginToShow') == '0':
             database_cloud.insert(
                 '''INSERT INTO file_sharing(file_name, file_owner, file_short_name, login_to_show, password) 
@@ -246,11 +249,11 @@ def file():
 
     elif args.get('action') == "shareFolder" and args.get('workFolder') and args.get('loginToShow'):
         if row[1]:
-            make_tarfile(share_path + '/' + row[2] + '/' + args.get('workFolder') + '.tar.gz',
-                         dir_path + actual_path + args.get('workFolder'))
+            make_tarfile(secure_filename(share_path + '/' + row[2] + '/' + args.get('workFolder') + '.tar.gz'),
+                         secure_filename(dir_path + actual_path + args.get('workFolder')))
         elif not row[1]:
-            make_tarfile(share_path + '/' + row[2] + '/' + args.get('workFolder') + '.tar.gz',
-                         row[0] + '/' + actual_path + args.get('workFolder'))
+            make_tarfile(secure_filename(share_path + '/' + row[2] + '/' + args.get('workFolder') + '.tar.gz'),
+                         secure_filename(row[0] + '/' + actual_path + args.get('workFolder')))
         database_cloud.insert('''INSERT INTO file_sharing(file_name, file_owner, file_short_name, login_to_show, 
         password) VALUES (%s, %s, %s, %s, %s)''', (args.get('workFolder') + '.tar.gz', row[2], rand_name,
                                                    args.get('loginToShow'),
