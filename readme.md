@@ -10,9 +10,9 @@
 ## Get your Cantina Cloud 🚚
 
 Using Debian:
-```wget https://github.com/Cantina-Org/cantina/releases/download/v0.1/catina-cloud-install-debian.sh | bash```<br>
+```wget https://github.com/Cantina-Org/cantina/releases/download/v0.3/catina-cloud-install-debian.sh | bash```<br>
 Using Arch:
-```wget https://github.com/Cantina-Org/cantina/releases/download/v0.1/catina-cloud-install-arch.sh | bash```
+```wget https://github.com/Cantina-Org/cantina/releases/download/v0.3/catina-cloud-install-arch.sh | bash```
 
 ## Get in touch 💬
 
