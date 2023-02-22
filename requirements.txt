@@ -104,4 +104,4 @@ udiskie==2.4.2
 urllib3==1.26.12
 validate-pyproject==0.12.1
 webencodings==0.5.1
-Werkzeug==2.2.2
+Werkzeug==2.2.3
