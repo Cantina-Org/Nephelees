@@ -157,14 +157,14 @@ def file():
                 lastPath = lastPath + last_path_1[i] + '/'
 
         if row[1]:
-            for (dirpath, dirnames, filenames) in os.walk(dir_path + '/' + args.get('path')):
+            for (dirpath, dirnames, filenames) in os.walk(secure_filename(dir_path + '/' + args.get('path'))):
                 if '.git' in dirnames:
                     git_repo = True
                 work_file_in_dir.extend(filenames)
                 work_dir.extend(dirnames)
                 break
         elif not row[1]:
-            for (dirpath, dirnames, filenames) in os.walk(row[0] + args.get('path')):
+            for (dirpath, dirnames, filenames) in os.walk(secure_filename(row[0] + args.get('path'))):
                 if '.git' in dirnames:
                     git_repo = True
                 work_file_in_dir.extend(filenames)
@@ -219,9 +219,9 @@ def file():
 
     elif args.get('action') == "createFolder" and args.get('workFile'):
         if row[1]:
-            os.mkdir(dir_path + actual_path + args.get('workFile'))
+            os.mkdir(secure_filename(dir_path + actual_path + args.get('workFile')))
         elif not row[1]:
-            os.mkdir(row[0] + '/' + actual_path + args.get('workFile'))
+            os.mkdir(secure_filename(row[0] + '/' + actual_path + args.get('workFile')))
         return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "shareFile" and args.get('workFile') and args.get('loginToShow'):
@@ -282,14 +282,14 @@ def upload_file():
             return redirect(url_for('login'))
         elif user_check[1]:
             f = request.files['file']
-            f.save(os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
+            f.save(secure_filename(os.path.join(dir_path + args.get('path'), secure_filename(f.filename))))
             make_log('upload_file', request.remote_addr, request.cookies.get('userID'), 1,
                      os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
             return redirect(url_for('file', path=args.get('path')))
         elif not user_check[1]:
             f = request.files['file']
-            f.save(os.path.join(dir_path + '/' + f_user_name(user_token) + args.get('path'),
-                                secure_filename(f.filename)))
+            f.save(secure_filename(os.path.join(dir_path + '/' + f_user_name(user_token) + args.get('path'),
+                                                secure_filename(f.filename))))
             make_log('upload_file', request.remote_addr, request.cookies.get('userID'), 1,
                      os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
             return redirect(url_for('file', path=args.get('path')))
@@ -308,9 +308,9 @@ def download_file():
     if user_check == 'UserNotFound':
         return redirect(url_for('login'))
     elif user_check[1]:
-        return send_from_directory(directory=dir_path + args.get('path'), path=args.get('item'))
+        return send_from_directory(secure_filename(dir_path + args.get('path')), path=args.get('item'))
     elif not user_check[1]:
-        return send_from_directory(directory=dir_path + '/' + f_user_name(user_token) + args.get('path'),
+        return send_from_directory(secure_filename(dir_path + '/' + f_user_name(user_token) + args.get('path')),
                                    path=args.get('item'))
 
 
