@@ -25,7 +25,7 @@ docutils==0.19
 evdev==1.6.1
 fastjsonschema==2.16.2
 Flask==2.2.2
-future==0.18.2
+future==0.18.3
 hid-parser==0.0.3
 idna==3.4
 imutils==0.5.4
