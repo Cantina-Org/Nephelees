@@ -44,7 +44,7 @@ louis==3.24.0
 lxml==4.9.2
 manjaro-sdk==0.1
 mariadb==1.1.5.post3
-markdown-it-py==2.1.0
+markdown-it-py==2.2.0
 MarkupSafe==2.1.1
 mdurl==0.1.2
 more-itertools==9.0.0
