@@ -3,8 +3,8 @@ from flask import Flask, render_template, request, url_for, redirect, make_respo
     escape
 from time import sleep
 from argon2 import argon2_hash
-import datetime
-import os
+from datetime import datetime
+from os import path, read, getcwd, walk, remove, system, mkdir
 import subprocess
 import uuid
 import shutil
@@ -62,17 +62,17 @@ def make_log(action_name, user_ip, user_token, log_level, argument=None, content
 
 def make_tarfile(output_filename, source_dir):
     with tarfile.open(output_filename, "w:gz") as tar:
-        tar.add(source_dir, arcname=os.path.basename(source_dir))
+        tar.add(source_dir, arcname=path.basename(source_dir))
 
 
 fd, filenames, lastPath = "", "", ""
-dir_path = os.path.abspath(os.getcwd()) + '/file_cloud'
-share_path = os.path.abspath(os.getcwd()) + '/share'
+dir_path = path.abspath(getcwd()) + '/file_cloud'
+share_path = path.abspath(getcwd()) + '/share'
 app = Flask(__name__)
 app.config['UPLOAD_PATH'] = dir_path
 api_no_token = 'You must send a token in JSON with the name: `api-token`!'
-conf_file = os.open(os.path.abspath(os.getcwd()) + "/config.json", os.O_RDONLY)
-config_data = json.loads(os.read(conf_file, 800))
+conf_file = open(path.abspath(getcwd()) + "/config.json", 'r')
+config_data = json.load(conf_file)
 
 # Connection aux bases de données
 database = Utils.database.DataBase(user=config_data['database'][0]['database_username'],
@@ -144,12 +144,12 @@ def file():
 
     if not args.getlist('path'):
         if row[1]:
-            for (dirpath, dirnames, filenames) in os.walk(dir_path):
+            for (dirpath, dirnames, filenames) in walk(dir_path):
                 work_file_in_dir.extend(filenames)
                 work_dir.extend(dirnames)
                 break
         elif not row[1]:
-            for (dirpath, dirnames, filenames) in os.walk(row[0]):
+            for (dirpath, dirnames, filenames) in walk(row[0]):
                 work_file_in_dir.extend(filenames)
                 work_dir.extend(dirnames)
                 break
@@ -166,14 +166,14 @@ def file():
                 lastPath = lastPath + last_path_1[i] + '/'
 
         if row[1]:
-            for (dirpath, dirnames, filenames) in os.walk(secure_filename(dir_path + '/' + args.get('path'))):
+            for (dirpath, dirnames, filenames) in walk(secure_filename(dir_path + '/' + args.get('path'))):
                 if '.git' in dirnames:
                     git_repo = True
                 work_file_in_dir.extend(filenames)
                 work_dir.extend(dirnames)
                 break
         elif not row[1]:
-            for (dirpath, dirnames, filenames) in os.walk(secure_filename(row[0] + args.get('path'))):
+            for (dirpath, dirnames, filenames) in walk(secure_filename(row[0] + args.get('path'))):
                 if '.git' in dirnames:
                     git_repo = True
                 work_file_in_dir.extend(filenames)
@@ -186,35 +186,33 @@ def file():
 
     elif args.get('action') == "deleteFile" and args.get('workFile') and args.get('workFile') in filenames:
         if row[1]:
-            os.remove(secure_filename(dir_path + actual_path + args.get('workFile')))
+            remove(secure_filename(dir_path + actual_path + args.get('workFile')))
         elif not row[1]:
-            os.remove(secure_filename(row[0] + '/' + actual_path + args.get('workFile')))
+            remove(secure_filename(row[0] + '/' + actual_path + args.get('workFile')))
         return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "createFile" and args.get('workFile'):
         if row[1]:
-            fd = os.open(secure_filename(dir_path + args.get('path') + "/" + args.get('workFile')),
-                         os.O_RDWR | os.O_CREAT)
+            fd = open(secure_filename(dir_path + args.get('path') + "/" + args.get('workFile')), 'r')
         elif not row[1]:
-            fd = os.open(secure_filename(row[0] + '/' + args.get('path') + "/" + args.get('workFile')),
-                         os.O_RDWR | os.O_CREAT)
-        os.close(fd)
+            fd = open(secure_filename(row[0] + '/' + args.get('path') + "/" + args.get('workFile')), 'r')
+
+        fd.close()
         return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "cloneRepo" and args.get('repoLink'):
         if row[1]:
-            os.system("cd " + secure_filename(dir_path + args.get('path')) + "/ && git clone " + args.get('repoLink'))
+            system("cd " + secure_filename(dir_path + args.get('path')) + "/ && git clone " + args.get('repoLink'))
         elif not row[1]:
-            os.system("cd " + secure_filename(row[0] + '/' + args.get('path')) + "/ && git clone " +
-                      args.get('repoLink'))
+            system("cd " + secure_filename(row[0] + '/' + args.get('path')) + "/ && git clone " + args.get('repoLink'))
 
         return render_template("redirect/r-myfile.html", path="/file/%spath=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "pullRepo" and git_repo:
         if row[1]:
-            os.system("cd " + secure_filename(dir_path + args.get('path')) + "/ && git pull")
+            system("cd " + secure_filename(dir_path + args.get('path')) + "/ && git pull")
         elif not row[1]:
-            os.system("cd " + secure_filename(row[0] + '/' + args.get('path')) + "/ && git pull")
+            system("cd " + secure_filename(row[0] + '/' + args.get('path')) + "/ && git pull")
 
         return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path, lastPath=lastPath)
 
@@ -228,9 +226,9 @@ def file():
 
     elif args.get('action') == "createFolder" and args.get('workFile'):
         if row[1]:
-            os.mkdir(secure_filename(dir_path + actual_path + args.get('workFile')))
+            mkdir(secure_filename(dir_path + actual_path + args.get('workFile')))
         elif not row[1]:
-            os.mkdir(secure_filename(row[0] + '/' + actual_path + args.get('workFile')))
+            mkdir(secure_filename(row[0] + '/' + actual_path + args.get('workFile')))
         return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "shareFile" and args.get('workFile') and args.get('loginToShow'):
@@ -289,16 +287,16 @@ def upload_file():
             return redirect(url_for('login'))
         elif user_check[1]:
             f = request.files['file']
-            f.save(secure_filename(os.path.join(dir_path + args.get('path'), secure_filename(f.filename))))
+            f.save(secure_filename(path.join(dir_path + args.get('path'), secure_filename(f.filename))))
             make_log('upload_file', request.remote_addr, request.cookies.get('userID'), 1,
-                     os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
+                     path.join(dir_path + args.get('path'), secure_filename(f.filename)))
             return redirect(url_for('file', path=args.get('path')))
         elif not user_check[1]:
             f = request.files['file']
-            f.save(secure_filename(os.path.join(dir_path + '/' + f_user_name(user_token) + args.get('path'),
-                                                secure_filename(f.filename))))
+            f.save(secure_filename(path.join(dir_path + '/' + f_user_name(user_token) + args.get('path'),
+                                             secure_filename(f.filename))))
             make_log('upload_file', request.remote_addr, request.cookies.get('userID'), 1,
-                     os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
+                     path.join(dir_path + args.get('path'), secure_filename(f.filename)))
             return redirect(url_for('file', path=args.get('path')))
 
 
@@ -359,7 +357,7 @@ def login():
             resp = make_response(redirect(url_for('home')))
             resp.set_cookie('userID', row[2])
             database.insert('''UPDATE cantina_administration.user SET last_online=%s WHERE token=%s''',
-                            (datetime.datetime.now(), row[2]))
+                            (datetime.now(), row[2]))
             return resp
         except Exception as error:
             make_log('Error', request.remote_addr, request.cookies.get('userID'), 2, str(error))
@@ -385,7 +383,7 @@ def admin_home():
         count = 0
         admin_and_login = user_login()
         if admin_and_login[0] and admin_and_login[1]:
-            for root_dir, cur_dir, files in os.walk(dir_path):
+            for root_dir, cur_dir, files in walk(dir_path):
                 count += len(files)
             main_folder_size = subprocess.check_output(['du', '-sh', dir_path]).split()[0].decode('utf-8')
             user_name = database.select('''SELECT user_name FROM cantina_administration.user WHERE token=%s''',
@@ -458,8 +456,8 @@ def admin_add_user():
                     except Exception as error:
                         make_log('Error', request.remote_addr, request.cookies.get('userID'), 2, str(error))
 
-                    os.mkdir(dir_path + '/' + secure_filename(request.form['uname']))
-                    os.mkdir(share_path + '/' + secure_filename(request.form['uname']))
+                    mkdir(dir_path + '/' + secure_filename(request.form['uname']))
+                    mkdir(share_path + '/' + secure_filename(request.form['uname']))
                     make_log('add_user', request.remote_addr, request.cookies.get('userID'), 2,
                              'Created user token: ' + new_uuid)
                     return redirect(url_for('admin_show_user'))
@@ -498,7 +496,7 @@ def admin_show_share_file(random_name=None):
             row = database.select('''SELECT file_name, file_owner FROM cantina_cloud.file_sharing WHERE 
             file_short_name=%s''', (random_name,), 1)
             if random_name:
-                os.remove(share_path + '/' + row[1] + '/' + row[0])
+                remove(share_path + '/' + row[1] + '/' + row[0])
                 database.insert('''DELETE FROM cantina_cloud.file_sharing WHERE file_short_name = %s;''', (random_name,)
                                 )
         except Exception as error:
