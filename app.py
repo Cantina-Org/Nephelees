@@ -4,16 +4,16 @@ from flask import Flask, render_template, request, url_for, redirect, make_respo
 from time import sleep
 from argon2 import argon2_hash
 from datetime import datetime
-from os import path, read, getcwd, walk, remove, system, mkdir
-import subprocess
-import uuid
-import shutil
-import random
-import string
-import tarfile
-import json
-import hashlib
-import Utils.database
+from os import path, getcwd, walk, remove, system, mkdir
+from subprocess import check_output
+from uuid import uuid1, uuid3
+from shutil import rmtree, copy2
+from random import choices
+from string import ascii_lowercase
+from tarfile import open as tar_open
+from json import load
+from hashlib import sha256, new
+from Utils.database import DataBase
 
 
 def f_user_name(user_id):
@@ -26,10 +26,10 @@ def salt_password(passwordtohash, user_name, new_account=False):
         if not new_account:
             data = database.select('''SELECT salt FROM cantina_administration.user WHERE user_name=%s''',
                                    (user_name,), 1)
-            passw = hashlib.sha256(argon2_hash(passwordtohash, data[0])).hexdigest().encode()
+            passw = sha256(argon2_hash(passwordtohash, data[0])).hexdigest().encode()
             return passw
         else:
-            passw = hashlib.sha256(argon2_hash(passwordtohash, user_name)).hexdigest().encode()
+            passw = sha256(argon2_hash(passwordtohash, user_name)).hexdigest().encode()
             return passw
 
     except AttributeError as error:
@@ -61,7 +61,7 @@ def make_log(action_name, user_ip, user_token, log_level, argument=None, content
 
 
 def make_tarfile(output_filename, source_dir):
-    with tarfile.open(output_filename, "w:gz") as tar:
+    with tar_open(output_filename, "w:gz") as tar:
         tar.add(source_dir, arcname=path.basename(source_dir))
 
 
@@ -72,12 +72,11 @@ app = Flask(__name__)
 app.config['UPLOAD_PATH'] = dir_path
 api_no_token = 'You must send a token in JSON with the name: `api-token`!'
 conf_file = open(path.abspath(getcwd()) + "/config.json", 'r')
-config_data = json.load(conf_file)
+config_data = load(conf_file)
 
 # Connection aux bases de données
-database = Utils.database.DataBase(user=config_data['database'][0]['database_username'],
-                                   password=config_data['database'][0]['database_password'],
-                                   host="localhost", port=3306)
+database = DataBase(user=config_data['database'][0]['database_username'],
+                    password=config_data['database'][0]['database_password'], host="localhost", port=3306)
 
 try:
     database.connection()
@@ -136,7 +135,7 @@ def file():
     if not user_token:
         return redirect(url_for('login'))
 
-    for i in random.choices(string.ascii_lowercase, k=10):
+    for i in choices(ascii_lowercase, k=10):
         rand_name += i
 
     row = database.select(f'''SELECT work_Dir, admin, user_name FROM cantina_administration.user WHERE token = %s''',
@@ -218,9 +217,9 @@ def file():
 
     elif args.get('action') == "deleteFolder" and args.get('workFile') and args.get('workFile') in work_dir:
         if row[1]:
-            shutil.rmtree(secure_filename(dir_path + actual_path + "/" + args.get('workFile')))
+            rmtree(secure_filename(dir_path + actual_path + "/" + args.get('workFile')))
         elif not row[1]:
-            shutil.rmtree(secure_filename(row[0] + '/' + actual_path + args.get('workFile')))
+            rmtree(secure_filename(row[0] + '/' + actual_path + args.get('workFile')))
 
         return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path)
 
@@ -233,11 +232,11 @@ def file():
 
     elif args.get('action') == "shareFile" and args.get('workFile') and args.get('loginToShow'):
         if row[1]:
-            shutil.copy2(secure_filename(dir_path + actual_path + args.get('workFile')),
-                         secure_filename(share_path + '/' + row[2] + '/' + args.get('workFile')))
+            copy2(secure_filename(dir_path + actual_path + args.get('workFile')),
+                  secure_filename(share_path + '/' + row[2] + '/' + args.get('workFile')))
         elif not row[1]:
-            shutil.copy2(secure_filename(row[0] + '/' + actual_path + args.get('workFile')),
-                         secure_filename(share_path + row[2] + '/' + args.get('workFile')))
+            copy2(secure_filename(row[0] + '/' + actual_path + args.get('workFile')),
+                  secure_filename(share_path + row[2] + '/' + args.get('workFile')))
         if args.get('loginToShow') == '0':
             database.insert('''INSERT INTO cantina_cloud.file_sharing(file_name, file_owner, file_short_name, 
             login_to_show, password) VALUES (%s, %s, %s, %s, %s)''', (args.get('workFile'), row[2], rand_name,
@@ -385,7 +384,7 @@ def admin_home():
         if admin_and_login[0] and admin_and_login[1]:
             for root_dir, cur_dir, files in walk(dir_path):
                 count += len(files)
-            main_folder_size = subprocess.check_output(['du', '-sh', dir_path]).split()[0].decode('utf-8')
+            main_folder_size = check_output(['du', '-sh', dir_path]).split()[0].decode('utf-8')
             user_name = database.select('''SELECT user_name FROM cantina_administration.user WHERE token=%s''',
                                         (request.cookies.get('userID'),))
             return render_template('admin/home.html', data=user_name, file_number=count,
@@ -438,8 +437,8 @@ def admin_add_user():
 
                 if request.form['pword1'] == request.form['pword2']:
                     data = request.form
-                    new_uuid = str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())))
-                    new_salt = hashlib.new('sha256').hexdigest()
+                    new_uuid = str(uuid3(uuid1(), str(uuid1())))
+                    new_salt = new('sha256').hexdigest()
                     try:
                         for i in data:
                             if i == 'admin':
@@ -558,7 +557,7 @@ def admin_add_api():
             if request.form.get('api_delete_user'):
                 api_delete_user = 1
 
-            new_uuid = str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())))
+            new_uuid = str(uuid3(uuid1(), str(uuid1())))
             database.insert('''INSERT INTO cantina_cloud.api(token, api_name, api_desc, owner) VALUES (%s, %s, %s, 
             %s)''', (new_uuid, request.form.get('api-name'), request.form.get('api-desc'), request.cookies.get(
                 'userID')))
@@ -647,8 +646,8 @@ def add_user_api():
                            (escape(content['api-token']),), 1)
     if row2[8]:
         try:
-            new_salt = hashlib.new('sha256').hexdigest()
-            new_uuid = str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())))
+            new_salt = new('sha256').hexdigest()
+            new_uuid = str(uuid3(uuid1(), str(uuid1())))
             if content['admin'] == 1:
                 admin = True
 
