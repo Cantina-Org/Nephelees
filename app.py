@@ -680,7 +680,7 @@ def add_user_api():
 
 @app.errorhandler(404)
 def page_not_found(error):
-    return render_template('error/404.html'), 404
+    return render_template('error/404.html'), error
 
 
 if __name__ == '__main__':
