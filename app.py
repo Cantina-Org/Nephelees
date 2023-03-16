@@ -1,45 +1,45 @@
-import time
-
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, url_for, redirect, make_response, send_from_directory, jsonify, \
     escape
-import argon2
-import datetime
-import os
-import subprocess
-import uuid
-import shutil
-import random
-import string
-import tarfile
-import json
-import hashlib
-import Utils.database
+from time import sleep
+from argon2 import argon2_hash
+from datetime import datetime
+from os import path, getcwd, walk, remove, system, mkdir
+from subprocess import check_output
+from uuid import uuid1, uuid3
+from shutil import rmtree, copy2
+from random import choices
+from string import ascii_lowercase
+from tarfile import open as tar_open
+from json import load
+from hashlib import sha256, new
+from Utils.database import DataBase
 
 
 def f_user_name(user_id):
-    data = database_administration.select("""SELECT user_name FROM user WHERE token=%s""", (user_id,), 1)
+    data = database.select("""SELECT user_name FROM cantina_administration.user WHERE token=%s""", (user_id,), 1)
     return data[0]
 
 
 def salt_password(passwordtohash, user_name, new_account=False):
     try:
         if not new_account:
-            data = database_administration.select('''SELECT salt FROM user WHERE user_name=%s''', (user_name,), 1)
-            passw = hashlib.sha256(argon2.argon2_hash(passwordtohash, data[0])).hexdigest().encode()
+            data = database.select('''SELECT salt FROM cantina_administration.user WHERE user_name=%s''',
+                                   (user_name,), 1)
+            passw = sha256(argon2_hash(passwordtohash, data[0])).hexdigest().encode()
             return passw
         else:
-            passw = hashlib.sha256(argon2.argon2_hash(passwordtohash, user_name)).hexdigest().encode()
+            passw = sha256(argon2_hash(passwordtohash, user_name)).hexdigest().encode()
             return passw
 
-    except AttributeError as e:
-        make_log('Error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
+    except AttributeError as error:
+        make_log('Error', request.remote_addr, request.cookies.get('userID'), 2, str(error))
         return None
 
 
 def user_login():
-    data = database_administration.select('''SELECT user_name, admin FROM user WHERE token = %s''',
-                                          (request.cookies.get('userID'),), 1)
+    data = database.select('''SELECT user_name, admin FROM cantina_administration.user WHERE token = %s''',
+                           (request.cookies.get('userID'),), 1)
     try:
         if data[0] != '' and data[1]:
             return True, True
@@ -47,71 +47,66 @@ def user_login():
             return True, False
         else:
             return False, False
-    except Exception as e:
-        return e
+    except Exception as error:
+        return error
 
 
 def make_log(action_name, user_ip, user_token, log_level, argument=None, content=None):
     if content:
-        database_administration.insert('''INSERT INTO log(name, user_ip, user_token, argument, log_level) VALUES (%s,
-        %s, %s,%s,%s)''', (str(action_name), str(user_ip), str(content), argument, log_level))
+        database.insert('''INSERT INTO cantina_administration.log(name, user_ip, user_token, argument, log_level) 
+        VALUES (%s, %s, %s,%s,%s)''', (str(action_name), str(user_ip), str(content), argument, log_level))
     else:
-        database_administration.insert('''INSERT INTO log(name, user_ip, user_token, argument, log_level) VALUES (%s,
-        %s, %s,%s,%s)''', (str(action_name), str(user_ip), str(user_token), argument, log_level))
+        database.insert('''INSERT INTO cantina_administration.log(name, user_ip, user_token, argument, log_level) 
+        VALUES (%s, %s, %s,%s,%s)''', (str(action_name), str(user_ip), str(user_token), argument, log_level))
 
 
 def make_tarfile(output_filename, source_dir):
-    with tarfile.open(output_filename, "w:gz") as tar:
-        tar.add(source_dir, arcname=os.path.basename(source_dir))
+    with tar_open(output_filename, "w:gz") as tar:
+        tar.add(source_dir, arcname=path.basename(source_dir))
 
 
 fd, filenames, lastPath = "", "", ""
-dir_path = os.path.abspath(os.getcwd()) + '/file_cloud'
-share_path = os.path.abspath(os.getcwd()) + '/share'
+dir_path = path.abspath(getcwd()) + '/file_cloud'
+share_path = path.abspath(getcwd()) + '/share'
 app = Flask(__name__)
 app.config['UPLOAD_PATH'] = dir_path
 api_no_token = 'You must send a token in JSON with the name: `api-token`!'
-conf_file = os.open(os.path.abspath(os.getcwd()) + "/config.json", os.O_RDONLY)
-config_data = json.loads(os.read(conf_file, 800))
+conf_file = open(path.abspath(getcwd()) + "/config.json", 'r')
+config_data = load(conf_file)
 
 # Connection aux bases de données
-database_administration = Utils.database.DataBase(user=config_data['database'][0]['database_username'],
-                                                  password=config_data['database'][0]['database_password'],
-                                                  host="localhost", port=3306,
-                                                  database=config_data['database'][0]['database_administration_name'])
-database_cloud = Utils.database.DataBase(user=config_data['database'][0]['database_username'],
-                                         password=config_data['database'][0]['database_password'],
-                                         host="localhost", port=3306,
-                                         database=config_data['database'][0]['database_cloud_name'])
+database = DataBase(user=config_data['database'][0]['database_username'],
+                    password=config_data['database'][0]['database_password'], host="localhost", port=3306)
+
 try:
-    database_administration.connection()
-    database_cloud.connection()
+    database.connection()
 except Exception as e:
     print("Erreur de connection à MySQL... Tentative de reconnexion dans 5 minutes...\n" + str(e))
-    time.sleep(250)
+    sleep(250)
     try:
-        database_administration.connection()
-        database_cloud.connection()
+        database.connection()
     except Exception as e:
         print(e)
         exit(0)
 
-
 # Creation des tables des bases données
-database_administration.create_table("CREATE TABLE IF NOT EXISTS user(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, "
-                                     "token TEXT,  user_name TEXT, salt TEXT, password TEXT, admin BOOL, "
-                                     "work_Dir TEXT, last_online TEXT)")
-database_administration.create_table("CREATE TABLE IF NOT EXISTS log(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, "
-                                     "name TEXT,  user_ip text, user_token TEXT, argument TEXT, log_level INT, "
-                                     "date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
-database_cloud.create_table("CREATE TABLE IF NOT EXISTS file_sharing(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, "
-                            "file_name TEXT, file_owner text, file_short_name TEXT, login_to_show BOOL DEFAULT 1, "
-                            "password TEXT, date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
-database_cloud.create_table("CREATE TABLE IF NOT EXISTS api(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
-                            "api_name TEXT, api_desc TEXT, owner TEXT)")
-database_cloud.create_table("CREATE TABLE IF NOT EXISTS api_permission(token_api TEXT, create_file BOOL, upload_file "
-                            "BOOL, delete_file BOOL, create_folder BOOL, delete_folder BOOL, share_file_and_folder "
-                            "BOOL, delete_share_file_and_folder BOOL, create_user BOOL, delete_user BOOL)")
+database.create_table(
+    "CREATE TABLE IF NOT EXISTS cantina_administration.user(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT,  "
+    "user_name TEXT, salt TEXT, password TEXT, admin BOOL, work_Dir TEXT, last_online TEXT)")
+database.create_table(
+    "CREATE TABLE IF NOT EXISTS cantina_administration.log(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, name TEXT,  "
+    "user_ip text, user_token TEXT, argument TEXT, log_level INT, date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+database.create_table(
+    "CREATE TABLE IF NOT EXISTS cantina_administration.file_sharing(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, "
+    "file_name TEXT, file_owner text, file_short_name TEXT, login_to_show BOOL DEFAULT 1, password TEXT, "
+    "date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+database.create_table(
+    "CREATE TABLE IF NOT EXISTS cantina_administration.api(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
+    "api_name TEXT, api_desc TEXT, owner TEXT)")
+database.create_table(
+    "CREATE TABLE IF NOT EXISTS cantina_administration.api_permission(token_api TEXT, create_file BOOL, upload_file "
+    "BOOL, delete_file BOOL, create_folder BOOL, delete_folder BOOL, share_file_and_folder BOOL, "
+    "delete_share_file_and_folder BOOL, create_user BOOL, delete_user BOOL)")
 
 
 # Fonction définissant la racine de Cantina Cloud
@@ -119,8 +114,8 @@ database_cloud.create_table("CREATE TABLE IF NOT EXISTS api_permission(token_api
 def home():
     if not request.cookies.get('userID'):
         return redirect(url_for('login'))
-    data = database_administration.select('''SELECT user_name, admin FROM user WHERE token = %s''',
-                                          (request.cookies.get('userID'),), 1)
+    data = database.select('''SELECT user_name, admin FROM cantina_administration.user WHERE token = %s''',
+                           (request.cookies.get('userID'),), 1)
     try:
         return render_template('home.html', cur=data)
     except IndexError:
@@ -140,20 +135,20 @@ def file():
     if not user_token:
         return redirect(url_for('login'))
 
-    for i in random.choices(string.ascii_lowercase, k=10):
+    for i in choices(ascii_lowercase, k=10):
         rand_name += i
 
-    row = database_administration.select(f'''SELECT work_Dir, admin, user_name FROM user WHERE token = %s''',
-                                         (user_token,), 1)
+    row = database.select(f'''SELECT work_Dir, admin, user_name FROM cantina_administration.user WHERE token = %s''',
+                          (user_token,), 1)
 
     if not args.getlist('path'):
         if row[1]:
-            for (dirpath, dirnames, filenames) in os.walk(dir_path):
+            for (dirpath, dirnames, filenames) in walk(dir_path):
                 work_file_in_dir.extend(filenames)
                 work_dir.extend(dirnames)
                 break
         elif not row[1]:
-            for (dirpath, dirnames, filenames) in os.walk(row[0]):
+            for (dirpath, dirnames, filenames) in walk(row[0]):
                 work_file_in_dir.extend(filenames)
                 work_dir.extend(dirnames)
                 break
@@ -170,14 +165,14 @@ def file():
                 lastPath = lastPath + last_path_1[i] + '/'
 
         if row[1]:
-            for (dirpath, dirnames, filenames) in os.walk(secure_filename(dir_path + '/' + args.get('path'))):
+            for (dirpath, dirnames, filenames) in walk(secure_filename(dir_path + '/' + args.get('path'))):
                 if '.git' in dirnames:
                     git_repo = True
                 work_file_in_dir.extend(filenames)
                 work_dir.extend(dirnames)
                 break
         elif not row[1]:
-            for (dirpath, dirnames, filenames) in os.walk(secure_filename(row[0] + args.get('path'))):
+            for (dirpath, dirnames, filenames) in walk(secure_filename(row[0] + args.get('path'))):
                 if '.git' in dirnames:
                     git_repo = True
                 work_file_in_dir.extend(filenames)
@@ -190,72 +185,68 @@ def file():
 
     elif args.get('action') == "deleteFile" and args.get('workFile') and args.get('workFile') in filenames:
         if row[1]:
-            os.remove(secure_filename(dir_path + actual_path + args.get('workFile')))
+            remove(secure_filename(dir_path + actual_path + args.get('workFile')))
         elif not row[1]:
-            os.remove(secure_filename(row[0] + '/' + actual_path + args.get('workFile')))
+            remove(secure_filename(row[0] + '/' + actual_path + args.get('workFile')))
         return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "createFile" and args.get('workFile'):
         if row[1]:
-            fd = os.open(secure_filename(dir_path + args.get('path') + "/" + args.get('workFile')),
-                         os.O_RDWR | os.O_CREAT)
+            fd = open(secure_filename(dir_path + args.get('path') + "/" + args.get('workFile')), 'r')
         elif not row[1]:
-            fd = os.open(secure_filename(row[0] + '/' + args.get('path') + "/" + args.get('workFile')),
-                         os.O_RDWR | os.O_CREAT)
-        os.close(fd)
+            fd = open(secure_filename(row[0] + '/' + args.get('path') + "/" + args.get('workFile')), 'r')
+
+        fd.close()
         return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "cloneRepo" and args.get('repoLink'):
         if row[1]:
-            os.system("cd " + secure_filename(dir_path + args.get('path')) + "/ && git clone " + args.get('repoLink'))
+            system("cd " + secure_filename(dir_path + args.get('path')) + "/ && git clone " + args.get('repoLink'))
         elif not row[1]:
-            os.system("cd " + secure_filename(row[0] + '/' + args.get('path')) + "/ && git clone " +
-                      args.get('repoLink'))
+            system("cd " + secure_filename(row[0] + '/' + args.get('path')) + "/ && git clone " + args.get('repoLink'))
 
         return render_template("redirect/r-myfile.html", path="/file/%spath=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "pullRepo" and git_repo:
         if row[1]:
-            os.system("cd " + secure_filename(dir_path + args.get('path')) + "/ && git pull")
+            system("cd " + secure_filename(dir_path + args.get('path')) + "/ && git pull")
         elif not row[1]:
-            os.system("cd " + secure_filename(row[0] + '/' + args.get('path')) + "/ && git pull")
+            system("cd " + secure_filename(row[0] + '/' + args.get('path')) + "/ && git pull")
 
         return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "deleteFolder" and args.get('workFile') and args.get('workFile') in work_dir:
         if row[1]:
-            shutil.rmtree(secure_filename(dir_path + actual_path + "/" + args.get('workFile')))
+            rmtree(secure_filename(dir_path + actual_path + "/" + args.get('workFile')))
         elif not row[1]:
-            shutil.rmtree(secure_filename(row[0] + '/' + actual_path + args.get('workFile')))
+            rmtree(secure_filename(row[0] + '/' + actual_path + args.get('workFile')))
 
         return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path)
 
     elif args.get('action') == "createFolder" and args.get('workFile'):
         if row[1]:
-            os.mkdir(secure_filename(dir_path + actual_path + args.get('workFile')))
+            mkdir(secure_filename(dir_path + actual_path + args.get('workFile')))
         elif not row[1]:
-            os.mkdir(secure_filename(row[0] + '/' + actual_path + args.get('workFile')))
+            mkdir(secure_filename(row[0] + '/' + actual_path + args.get('workFile')))
         return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "shareFile" and args.get('workFile') and args.get('loginToShow'):
         if row[1]:
-            shutil.copy2(secure_filename(dir_path + actual_path + args.get('workFile')),
-                         secure_filename(share_path + '/' + row[2] + '/' + args.get('workFile')))
+            copy2(secure_filename(dir_path + actual_path + args.get('workFile')),
+                  secure_filename(share_path + '/' + row[2] + '/' + args.get('workFile')))
         elif not row[1]:
-            shutil.copy2(secure_filename(row[0] + '/' + actual_path + args.get('workFile')),
-                         secure_filename(share_path + row[2] + '/' + args.get('workFile')))
+            copy2(secure_filename(row[0] + '/' + actual_path + args.get('workFile')),
+                  secure_filename(share_path + row[2] + '/' + args.get('workFile')))
         if args.get('loginToShow') == '0':
-            database_cloud.insert(
-                '''INSERT INTO file_sharing(file_name, file_owner, file_short_name, login_to_show, password) 
-                VALUES (%s, %s, %s, %s, %s)''',
-                (args.get('workFile'), row[2], rand_name, args.get('loginToShow'), None)
-            )
+            database.insert('''INSERT INTO cantina_cloud.file_sharing(file_name, file_owner, file_short_name, 
+            login_to_show, password) VALUES (%s, %s, %s, %s, %s)''', (args.get('workFile'), row[2], rand_name,
+                                                                      args.get('loginToShow'), None))
 
         elif args.get('loginToShow') == '1':
-            database_cloud.insert('''INSERT INTO file_sharing(file_name, file_owner, file_short_name, login_to_show, 
-                        password) VALUES (%s, %s, %s, %s, %s)''',
-                                  (args.get('workFile'), row[2], rand_name, args.get('loginToShow'),
-                                   salt_password(args.get('password'), row[2])))
+            database.insert('''INSERT INTO cantina_cloud.file_sharing(file_name, file_owner, file_short_name, 
+            login_to_show, password) VALUES (%s, %s, %s, %s, %s)''', (args.get('workFile'), row[2], rand_name,
+                                                                      args.get('loginToShow'), salt_password(
+                args.get('password'), row[2])))
 
         return render_template("redirect/r-myfile-clipboardcopy.html", short_name=rand_name,
                                path="/file/?path=" + actual_path)
@@ -267,7 +258,7 @@ def file():
         elif not row[1]:
             make_tarfile(secure_filename(share_path + '/' + row[2] + '/' + args.get('workFolder') + '.tar.gz'),
                          secure_filename(row[0] + '/' + actual_path + args.get('workFolder')))
-        database_cloud.insert('''INSERT INTO file_sharing(file_name, file_owner, file_short_name, login_to_show, 
+        database.insert('''INSERT INTO cantina_cloud.file_sharing(file_name, file_owner, file_short_name, login_to_show, 
         password) VALUES (%s, %s, %s, %s, %s)''', (args.get('workFolder') + '.tar.gz', row[2], rand_name,
                                                    args.get('loginToShow'),
                                                    salt_password(args.get('password'), row[2])))
@@ -295,16 +286,16 @@ def upload_file():
             return redirect(url_for('login'))
         elif user_check[1]:
             f = request.files['file']
-            f.save(secure_filename(os.path.join(dir_path + args.get('path'), secure_filename(f.filename))))
+            f.save(secure_filename(path.join(dir_path + args.get('path'), secure_filename(f.filename))))
             make_log('upload_file', request.remote_addr, request.cookies.get('userID'), 1,
-                     os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
+                     path.join(dir_path + args.get('path'), secure_filename(f.filename)))
             return redirect(url_for('file', path=args.get('path')))
         elif not user_check[1]:
             f = request.files['file']
-            f.save(secure_filename(os.path.join(dir_path + '/' + f_user_name(user_token) + args.get('path'),
-                                                secure_filename(f.filename))))
+            f.save(secure_filename(path.join(dir_path + '/' + f_user_name(user_token) + args.get('path'),
+                                             secure_filename(f.filename))))
             make_log('upload_file', request.remote_addr, request.cookies.get('userID'), 1,
-                     os.path.join(dir_path + args.get('path'), secure_filename(f.filename)))
+                     path.join(dir_path + args.get('path'), secure_filename(f.filename)))
             return redirect(url_for('file', path=args.get('path')))
 
 
@@ -330,13 +321,13 @@ def download_file():
 # Fonction permettant de voire les fichiers partagé
 @app.route('/file_share/<short_name>')
 def file_share(short_name=None):
-    row = database_cloud.select('''SELECT * FROM file_sharing WHERE file_short_name=%s''', (short_name,), 1)
+    row = database.select('''SELECT * FROM cantina_cloud.file_sharing WHERE file_short_name=%s''', (short_name,), 1)
     is_login = user_login()
     if not row[4]:
         if not row[5]:
             return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
         elif row[5] != "" and request.args.get('password') != "":
-            data = database_cloud.select('''SELECT salt FROM user WHERE user_name=%s''', (row[2],), 1)
+            data = database.select('''SELECT salt FROM cantina_administration.user WHERE user_name=%s''', (row[2],), 1)
             if salt_password(request.args.get('password'), data) == row[5]:
                 return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
             else:
@@ -357,18 +348,18 @@ def login():
     if request.method == 'POST':
         user = request.form['nm']
         passwd = request.form['passwd']
-        row = database_administration.select(f'''SELECT user_name, password, token FROM user WHERE password = %s 
+        row = database.select(f'''SELECT user_name, password, token FROM cantina_administration.user WHERE password = %s 
         AND user_name = %s''', (salt_password(passwd, user), user), 1)
 
         try:
             make_log('login', request.remote_addr, row[2], 1)
             resp = make_response(redirect(url_for('home')))
             resp.set_cookie('userID', row[2])
-            database_administration.insert(f'''UPDATE user SET last_online=%s WHERE token=%s''',
-                                           (datetime.datetime.now(), row[2]))
+            database.insert('''UPDATE cantina_administration.user SET last_online=%s WHERE token=%s''',
+                            (datetime.now(), row[2]))
             return resp
-        except Exception as e:
-            make_log('Error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
+        except Exception as error:
+            make_log('Error', request.remote_addr, request.cookies.get('userID'), 2, str(error))
             return redirect(url_for("home"))
 
     elif request.method == 'GET':
@@ -391,18 +382,18 @@ def admin_home():
         count = 0
         admin_and_login = user_login()
         if admin_and_login[0] and admin_and_login[1]:
-            for root_dir, cur_dir, files in os.walk(dir_path):
+            for root_dir, cur_dir, files in walk(dir_path):
                 count += len(files)
-            main_folder_size = subprocess.check_output(['du', '-sh', dir_path]).split()[0].decode('utf-8')
-            user_name = database_administration.select('''SELECT user_name FROM user WHERE token=%s''',
-                                                       (request.cookies.get('userID'),))
+            main_folder_size = check_output(['du', '-sh', dir_path]).split()[0].decode('utf-8')
+            user_name = database.select('''SELECT user_name FROM cantina_administration.user WHERE token=%s''',
+                                        (request.cookies.get('userID'),))
             return render_template('admin/home.html', data=user_name, file_number=count,
                                    main_folder_size=main_folder_size)
         else:
             return redirect(url_for('home'))
 
-    except Exception as e:
-        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
+    except Exception as error:
+        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(error))
         return redirect(url_for('home'))
 
 
@@ -414,19 +405,20 @@ def admin_show_user(user_name=None):
         admin_and_login = user_login()
         if admin_and_login[0] and admin_and_login[1]:
             if user_name:
-                user_account = database_administration.select('''SELECT * FROM user WHERE user_name=%s''', (user_name,))
+                user_account = database.select('''SELECT * FROM cantina_administration.user WHERE user_name=%s''',
+                                               (user_name,))
 
                 return render_template('admin/specific_user_manager.html', user_account=user_account[0])
             else:
-                all_account = database_administration.select(body='''SELECT * FROM user''')
-                user_name = database_administration.select('''SELECT user_name FROM user WHERE token=%s''',
-                                                           (request.cookies.get('userID'),))
+                all_account = database.select(body='''SELECT * FROM cantina_administration.user''')
+                user_name = database.select('''SELECT user_name FROM cantina_administration.user WHERE token=%s''',
+                                            (request.cookies.get('userID'),))
                 return render_template('admin/user_manager.html', user_name=user_name,
                                        all_account=all_account)
         else:
             return redirect(url_for('home'))
-    except Exception as e:
-        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
+    except Exception as error:
+        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(error))
         return redirect(url_for('home'))
 
 
@@ -438,15 +430,15 @@ def admin_add_user():
         admin_and_login = user_login()
         if admin_and_login[0] and admin_and_login[1]:
             if request.method == 'GET':
-                user_name = database_administration.select('''SELECT user_name FROM user WHERE token=%s''',
-                                                           (request.cookies.get('userID'),))
+                user_name = database.select('''SELECT user_name FROM cantina_administration.user WHERE token=%s''',
+                                            (request.cookies.get('userID'),))
                 return render_template('admin/add_user.html', user_name=user_name)
             elif request.method == 'POST':
 
                 if request.form['pword1'] == request.form['pword2']:
                     data = request.form
-                    new_uuid = str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())))
-                    new_salt = hashlib.new('sha256').hexdigest()
+                    new_uuid = str(uuid3(uuid1(), str(uuid1())))
+                    new_salt = new('sha256').hexdigest()
                     try:
                         for i in data:
                             if i == 'admin':
@@ -454,23 +446,22 @@ def admin_add_user():
                             else:
                                 pass
 
-                        database_administration.insert('''INSERT INTO user(token, user_name, salt, password, admin, 
-                        work_Dir) VALUES (%s, %s, %s, %s, %s, %s)''', (new_uuid, request.form['uname'], new_salt,
-                                                                       salt_password(request.form['pword2'], new_salt,
-                                                                                     new_account=True), admin,
-                                                                       dir_path +
-                                                                       '/' + secure_filename(request.form['uname'])))
+                        database.insert('''INSERT INTO cantina_administration.user(token, user_name, salt, password, 
+                        admin, work_Dir) VALUES (%s, %s, %s, %s, %s, %s)''',
+                                        (new_uuid, request.form['uname'], new_salt,
+                                         salt_password(request.form['pword2'], new_salt, new_account=True), admin,
+                                         dir_path + '/' + secure_filename(request.form['uname'])))
 
-                    except Exception as e:
-                        make_log('Error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
+                    except Exception as error:
+                        make_log('Error', request.remote_addr, request.cookies.get('userID'), 2, str(error))
 
-                    os.mkdir(dir_path + '/' + secure_filename(request.form['uname']))
-                    os.mkdir(share_path + '/' + secure_filename(request.form['uname']))
+                    mkdir(dir_path + '/' + secure_filename(request.form['uname']))
+                    mkdir(share_path + '/' + secure_filename(request.form['uname']))
                     make_log('add_user', request.remote_addr, request.cookies.get('userID'), 2,
                              'Created user token: ' + new_uuid)
                     return redirect(url_for('admin_show_user'))
-    except Exception as e:
-        make_log('Error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
+    except Exception as error:
+        make_log('Error', request.remote_addr, request.cookies.get('userID'), 2, str(error))
         return redirect(url_for('home'))
 
 
@@ -482,13 +473,13 @@ def admin_show_log(log_id=None):
         admin_and_login = user_login()
         if admin_and_login[0] and admin_and_login[1]:
             if log_id:
-                log = database_administration.select('''SELECT * FROM log WHERE ID=%s''', (log_id,), 1)
+                log = database.select('''SELECT * FROM cantina_administration.log WHERE ID=%s''', (log_id,), 1)
                 return render_template('admin/specific_log.html', log=log)
             else:
-                all_log = database_administration.select('''SELECT * FROM log''')
+                all_log = database.select('''SELECT * FROM log''')
                 return render_template('admin/show_log.html', all_log=all_log)
-    except Exception as e:
-        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
+    except Exception as error:
+        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(error))
         return redirect(url_for('home'))
 
 
@@ -498,19 +489,18 @@ def admin_show_log(log_id=None):
 def admin_show_share_file(random_name=None):
     admin_and_login = user_login()
     if admin_and_login[0] and admin_and_login[1]:
-        user_name = database_administration.select('''SELECT user_name FROM user WHERE token=%s''',
-                                                   (request.cookies.get('userID'),), 1)
+        user_name = database.select('''SELECT user_name FROM cantina_administration.user WHERE token=%s''',
+                                    (request.cookies.get('userID'),), 1)
         try:
+            row = database.select('''SELECT file_name, file_owner FROM cantina_cloud.file_sharing WHERE 
+            file_short_name=%s''', (random_name,), 1)
             if random_name:
-                row = database_cloud.select(
-                    '''SELECT file_name, file_owner FROM file_sharing WHERE file_short_name=%s''', (random_name,), 1
-                )
-                os.remove(share_path + '/' + row[1] + '/' + row[0])
-                database_administration.insert('''DELETE FROM file_sharing WHERE file_short_name = %s;''',
-                                               (random_name,))
-        except Exception as e:
-            make_log('Error', request.remote_addr, request.cookies.get('userID'), 2, str(e))
-        all_share_file = database_cloud.select('''SELECT * FROM file_sharing''')
+                remove(share_path + '/' + row[1] + '/' + row[0])
+                database.insert('''DELETE FROM cantina_cloud.file_sharing WHERE file_short_name = %s;''', (random_name,)
+                                )
+        except Exception as error:
+            make_log('Error', request.remote_addr, request.cookies.get('userID'), 2, str(error))
+        all_share_file = database.select('''SELECT * FROM cantina_cloud.file_sharing''')
         return render_template('admin/show_share_file.html', user_name=user_name, all_share_file=all_share_file)
 
     else:
@@ -525,10 +515,10 @@ def admin_api_manager(api_id=None):
     admin_and_login = user_login()
     if admin_and_login[0] and admin_and_login[1]:
         if api_id:
-            api = database_cloud.select('''SELECT * FROM api WHERE ID=%s''', (api_id,))
+            api = database.select('''SELECT * FROM cantina_cloud.api WHERE ID=%s''', (api_id,))
             return render_template('admin/specific_api_manager.html', api=api[0])
         else:
-            api = database_cloud.select('''SELECT * FROM api''')
+            api = database.select('''SELECT * FROM cantina_cloud.api''')
             return render_template('admin/api_manager.html', api=api)
     else:
         make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2)
@@ -543,8 +533,8 @@ def admin_add_api():
     admin_and_login = user_login()
     if admin_and_login[0] and admin_and_login[1]:
         if request.method == 'GET':
-            user_name = database_administration.select('''SELECT user_name FROM user WHERE token=%s''',
-                                                       (request.cookies.get('userID'),))
+            user_name = database.select('''SELECT user_name FROM cantina_administration.user WHERE token=%s''',
+                                        (request.cookies.get('userID'),))
 
             return render_template('admin/add_api.html', user_name=user_name)
         elif request.method == 'POST':
@@ -567,18 +557,21 @@ def admin_add_api():
             if request.form.get('api_delete_user'):
                 api_delete_user = 1
 
-            new_uuid = str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())))
-            database_cloud.insert('''INSERT INTO api(token, api_name, api_desc, owner) VALUES (%s, %s, %s, %s)''',
-                                  (new_uuid, request.form.get('api-name'), request.form.get('api-desc'),
-                                   request.cookies.get('userID')))
-            database_cloud.insert('''INSERT INTO api_permission(token_api, create_file, upload_file, delete_file, 
-            create_folder, delete_folder, share_file_and_folder, delete_share_file_and_folder, create_user, 
-            delete_user) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
-                                  (new_uuid, api_create_file, api_upload_file,
-                                   api_delete_file, api_create_folder,
-                                   api_delete_folder, api_share_file_folder,
-                                   api_delete_share_file_folder, api_create_user,
-                                   api_delete_user))
+            new_uuid = str(uuid3(uuid1(), str(uuid1())))
+            database.insert('''INSERT INTO cantina_cloud.api(token, api_name, api_desc, owner) VALUES (%s, %s, %s, 
+            %s)''', (new_uuid, request.form.get('api-name'), request.form.get('api-desc'), request.cookies.get(
+                'userID')))
+            database.insert('''INSERT INTO cantina_cloud.api_permission(token_api, create_file, upload_file, 
+            delete_file, create_folder, delete_folder, share_file_and_folder, delete_share_file_and_folder, 
+            create_user, delete_user) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''', (new_uuid, api_create_file,
+                                                                                           api_upload_file,
+                                                                                           api_delete_file,
+                                                                                           api_create_folder,
+                                                                                           api_delete_folder,
+                                                                                           api_share_file_folder,
+                                                                                           api_delete_share_file_folder,
+                                                                                           api_create_user,
+                                                                                           api_delete_user))
 
             make_log('add_api', request.remote_addr, request.cookies.get('userID'), 2,
                      'Created API token: ' + new_uuid)
@@ -606,7 +599,7 @@ def admin_add_api():
 @app.route('/api/v1/test_connection', methods=['GET'])
 def test_connection():
     content = request.json
-    row1 = database_cloud.select('''SELECT * FROM api where token=%s''', (escape(content['api-token']),), 1)
+    row1 = database.select('''SELECT * FROM cantina_cloud.api where token=%s''', (escape(content['api-token']),), 1)
     make_log('test_connection', request.remote_addr, content['api-token'], 4, content['api-token'])
     return jsonify({
         "status-code": "200",
@@ -621,9 +614,9 @@ def test_connection():
 @app.route('/api/v1/show_permission', methods=['GET'])
 def show_permission():
     content = request.json
-    row1 = database_cloud.select('''SELECT * FROM api where token=%s''', (escape(content['api-token']),), 1)
-    row2 = database_cloud.select('''SELECT * FROM api_permission where token_api=%s''', (escape(content['api-token']),),
-                                 1)
+    row1 = database.select('''SELECT * FROM cantina_cloud.api where token=%s''', (escape(content['api-token']),), 1)
+    row2 = database.select('''SELECT * FROM cantina_cloud.api_permission where token_api=%s''',
+                           (escape(content['api-token']),), 1)
     make_log('show_permission', request.remote_addr, escape(content['api-token']), 4, escape(content['api-token']))
 
     return jsonify({
@@ -648,20 +641,20 @@ def show_permission():
 def add_user_api():
     admin = False
     content = request.json
-    row1 = database_cloud.select('''SELECT * FROM api where token=%s''', (escape(content['api-token']),), 1)
-    row2 = database_cloud.select('''SELECT * FROM api_permission where token_api=%s''', (escape(content['api-token']),),
-                                 1)
+    row1 = database.select('''SELECT * FROM cantina_cloud.api where token=%s''', (escape(content['api-token']),), 1)
+    row2 = database.select('''SELECT * FROM cantina_cloud.api_permission where token_api=%s''',
+                           (escape(content['api-token']),), 1)
     if row2[8]:
         try:
-            new_salt = hashlib.new('sha256').hexdigest()
-            new_uuid = str(uuid.uuid3(uuid.uuid1(), str(uuid.uuid1())))
+            new_salt = new('sha256').hexdigest()
+            new_uuid = str(uuid3(uuid1(), str(uuid1())))
             if content['admin'] == 1:
                 admin = True
 
-            database_administration.insert('''INSERT INTO user(token, user_name, salt, password, admin, work_Dir) 
-                            VALUES (%s, %s, %s, %s, %s, %s)''', (new_uuid, escape(content['username']), new_salt,
-                                                                 salt_password(content['password'], new_salt), admin,
-                                                                 dir_path + '/' + secure_filename(content['username'])))
+            database.insert('''INSERT INTO cantina_administration.user(token, user_name, salt, password, admin, 
+            work_Dir)  VALUES (%s, %s, %s, %s, %s, %s)''', (new_uuid, escape(content['username']), new_salt,
+                                                            salt_password(content['password'], new_salt), admin,
+                                                            dir_path + '/' + secure_filename(content['username'])))
             make_log('add_user_api', request.remote_addr, request.cookies.get('userID'), 4,
                      'Created User token: ' + new_uuid, escape(content['api-token']))
             return jsonify({
@@ -672,8 +665,8 @@ def add_user_api():
                 "user-permission-to-create": escape(content['admin']),
                 "user-token-create": new_uuid
             })
-        except KeyError as e:
-            return 'L\'argument {} est manquant!'.format(str(e))
+        except KeyError as error:
+            return 'L\'argument {} est manquant!'.format(str(error))
     else:
         if row1:
             make_log('add_api_error', request.remote_addr, content['api-token'], 4,
@@ -693,7 +686,7 @@ def add_user_api():
 
 @app.errorhandler(404)
 def page_not_found(error):
-    return render_template('error/404.html'), error
+    return render_template('error/404.html'), 404
 
 
 if __name__ == '__main__':

@@ -2,7 +2,7 @@ import pymysql
 
 
 class DataBase:
-    def __init__(self, user, password, host, port, database):
+    def __init__(self, user, password, host, port, database=None):
         self.database = database
         self.port = port
         self.host = host
