@@ -1,3 +1,5 @@
+import time
+
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, url_for, redirect, make_response, send_from_directory, jsonify, \
     escape
@@ -81,8 +83,19 @@ database_cloud = Utils.database.DataBase(user=config_data['database'][0]['databa
                                          password=config_data['database'][0]['database_password'],
                                          host="localhost", port=3306,
                                          database=config_data['database'][0]['database_cloud_name'])
-database_administration.connection()
-database_cloud.connection()
+try:
+    database_administration.connection()
+    database_cloud.connection()
+except Exception as e:
+    print("Erreur de connection à MySQL... Tentative de reconnexion dans 5 minutes...\n" + str(e))
+    time.sleep(250)
+    try:
+        database_administration.connection()
+        database_cloud.connection()
+    except Exception as e:
+        print(e)
+        exit(0)
+
 
 # Creation des tables des bases données
 database_administration.create_table("CREATE TABLE IF NOT EXISTS user(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, "
@@ -680,7 +693,7 @@ def add_user_api():
 
 @app.errorhandler(404)
 def page_not_found(error):
-    return render_template('error/404.html'), 404
+    return render_template('error/404.html'), error
 
 
 if __name__ == '__main__':
