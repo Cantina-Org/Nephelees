@@ -134,6 +134,7 @@ def file():
     work_file_in_dir, work_dir = [], []
     git_repo = False
     user_token = request.cookies.get('userID')
+
     # Redirection vers la connection si l'utilisateur n'est pas connecté
     if not user_token:
         return redirect(url_for('login'))
@@ -143,7 +144,7 @@ def file():
 
     row = database.select(f'''SELECT work_Dir, admin, user_name FROM cantina_administration.user WHERE token = %s''',
                           (user_token,), 1)
-
+    print(dir_path)
     if not args.getlist('path'):
         if row[1]:
             for (dirpath, dirnames, filenames) in walk(dir_path):
@@ -168,14 +169,14 @@ def file():
                 lastPath = lastPath + last_path_1[i] + '/'
 
         if row[1]:
-            for (dirpath, dirnames, filenames) in walk(secure_filename(dir_path + '/' + args.get('path'))):
+            for (dirpath, dirnames, filenames) in walk(dir_path + '/' + args.get('path')):
                 if '.git' in dirnames:
                     git_repo = True
                 work_file_in_dir.extend(filenames)
                 work_dir.extend(dirnames)
                 break
         elif not row[1]:
-            for (dirpath, dirnames, filenames) in walk(secure_filename(row[0] + args.get('path'))):
+            for (dirpath, dirnames, filenames) in walk(row[0] + args.get('path')):
                 if '.git' in dirnames:
                     git_repo = True
                 work_file_in_dir.extend(filenames)
@@ -183,6 +184,7 @@ def file():
                 break
 
     if not args.get('action') or args.get('action') == 'show':
+        print(actual_path, work_dir, work_file_in_dir)
         return render_template('myfile.html', dir=work_dir, file=work_file_in_dir, path=actual_path,
                                lastPath=lastPath, git_repo=git_repo)
 
@@ -289,14 +291,14 @@ def upload_file():
             return redirect(url_for('login'))
         elif user_check[1]:
             f = request.files['file']
-            f.save(secure_filename(path.join(dir_path + args.get('path'), secure_filename(f.filename))))
+            f.save(path.join(dir_path + args.get('path'), secure_filename(f.filename)))
             make_log('upload_file', request.remote_addr, request.cookies.get('userID'), 1,
                      path.join(dir_path + args.get('path'), secure_filename(f.filename)))
             return redirect(url_for('file', path=args.get('path')))
         elif not user_check[1]:
             f = request.files['file']
-            f.save(secure_filename(path.join(dir_path + '/' + f_user_name(user_token) + args.get('path'),
-                                             secure_filename(f.filename))))
+            f.save(path.join(dir_path + '/' + f_user_name(user_token) + args.get('path'),
+                             secure_filename(f.filename)))
             make_log('upload_file', request.remote_addr, request.cookies.get('userID'), 1,
                      path.join(dir_path + args.get('path'), secure_filename(f.filename)))
             return redirect(url_for('file', path=args.get('path')))
