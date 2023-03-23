@@ -315,10 +315,10 @@ def download_file():
     if user_check == 'UserNotFound':
         return redirect(url_for('login'))
     elif user_check[1]:
-        return send_from_directory(secure_filename(dir_path + args.get('path')), path=args.get('item'))
+        return send_from_directory(dir_path + args.get('path'), path=secure_filename(args.get('item')))
     elif not user_check[1]:
-        return send_from_directory(secure_filename(dir_path + '/' + f_user_name(user_token) + args.get('path')),
-                                   path=args.get('item'))
+        return send_from_directory(dir_path + '/' + f_user_name(user_token) + args.get('path'),
+                                   path=secure_filename(args.get('item')))
 
 
 # Fonction permettant de voire les fichiers partagé
