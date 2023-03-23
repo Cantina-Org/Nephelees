@@ -190,49 +190,49 @@ def file():
 
     elif args.get('action') == "deleteFile" and args.get('workFile') and args.get('workFile') in filenames:
         if row[1]:
-            remove(secure_filename(dir_path + actual_path + args.get('workFile')))
+            remove(dir_path + actual_path + secure_filename(args.get('workFile')))
         elif not row[1]:
-            remove(secure_filename(row[0] + '/' + actual_path + args.get('workFile')))
+            remove(row[0] + '/' + actual_path + secure_filename(args.get('workFile')))
         return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "createFile" and args.get('workFile'):
         if row[1]:
-            fd = open(secure_filename(dir_path + args.get('path') + "/" + args.get('workFile')), 'r')
+            fd = open(dir_path + args.get('path') + "/" + secure_filename(args.get('workFile')), 'r')
         elif not row[1]:
-            fd = open(secure_filename(row[0] + '/' + args.get('path') + "/" + args.get('workFile')), 'r')
+            fd = open(row[0] + '/' + args.get('path') + "/" + secure_filename(args.get('workFile')), 'r')
 
         fd.close()
         return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "cloneRepo" and args.get('repoLink'):
         if row[1]:
-            system("cd " + secure_filename(dir_path + args.get('path')) + "/ && git clone " + args.get('repoLink'))
+            system("cd " + dir_path + args.get('path') + "/ && git clone " + args.get('repoLink'))
         elif not row[1]:
-            system("cd " + secure_filename(row[0] + '/' + args.get('path')) + "/ && git clone " + args.get('repoLink'))
+            system("cd " + row[0] + '/' + args.get('path') + "/ && git clone " + args.get('repoLink'))
 
         return render_template("redirect/r-myfile.html", path="/file/%spath=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "pullRepo" and git_repo:
         if row[1]:
-            system("cd " + secure_filename(dir_path + args.get('path')) + "/ && git pull")
+            system("cd " + dir_path + args.get('path') + "/ && git pull")
         elif not row[1]:
-            system("cd " + secure_filename(row[0] + '/' + args.get('path')) + "/ && git pull")
+            system("cd " + row[0] + '/' + args.get('path') + "/ && git pull")
 
         return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "deleteFolder" and args.get('workFile') and args.get('workFile') in work_dir:
         if row[1]:
-            rmtree(secure_filename(dir_path + actual_path + "/" + args.get('workFile')))
+            rmtree(dir_path + actual_path + "/" + args.get('workFile'))
         elif not row[1]:
-            rmtree(secure_filename(row[0] + '/' + actual_path + args.get('workFile')))
+            rmtree(row[0] + '/' + actual_path + args.get('workFile'))
 
         return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path)
 
     elif args.get('action') == "createFolder" and args.get('workFile'):
         if row[1]:
-            mkdir(secure_filename(dir_path + actual_path + args.get('workFile')))
+            mkdir(dir_path + actual_path + args.get('workFile'))
         elif not row[1]:
-            mkdir(secure_filename(row[0] + '/' + actual_path + args.get('workFile')))
+            mkdir(row[0] + '/' + actual_path + args.get('workFile'))
         return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "shareFile" and args.get('workFile') and args.get('loginToShow'):
