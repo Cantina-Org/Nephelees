@@ -289,13 +289,13 @@ def upload_file():
             return redirect(url_for('login'))
         elif user_check[1]:
             f = request.files['file']
-            f.save(secure_filename(path.join(dir_path + args.get('path'), secure_filename(f.filename))))
+            f.save(path.join(dir_path + args.get('path'), secure_filename(f.filename)))
             make_log('upload_file', request.remote_addr, request.cookies.get('userID'), 1,
                      path.join(dir_path + args.get('path'), secure_filename(f.filename)))
             return redirect(url_for('file', path=args.get('path')))
         elif not user_check[1]:
             f = request.files['file']
-            f.save(secure_filename(path.join(dir_path + '/' + f_user_name(user_token) + args.get('path'),
+            f.save(path.join(dir_path + '/' + f_user_name(user_token) + args.get('path')),
                                              secure_filename(f.filename))))
             make_log('upload_file', request.remote_addr, request.cookies.get('userID'), 1,
                      path.join(dir_path + args.get('path'), secure_filename(f.filename)))
