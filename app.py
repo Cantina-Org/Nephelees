@@ -24,10 +24,13 @@ def f_user_name(user_id):
 def salt_password(passwordtohash, user_name, new_account=False):
     try:
         if not new_account:
-            data = database.select('''SELECT salt FROM cantina_administration.user WHERE user_name=%s''',
-                                   (user_name,), 1)
-            passw = sha256(argon2_hash(passwordtohash, data[0])).hexdigest().encode()
-            return passw
+            try:
+                data = database.select('''SELECT salt FROM cantina_administration.user WHERE user_name=%s''',
+                                       (user_name,), 1)
+                passw = sha256(argon2_hash(passwordtohash, data[0])).hexdigest().encode()
+                return passw
+            except Exception as e:
+                return 'User Not Found, ' + str(e)
         else:
             passw = sha256(argon2_hash(passwordtohash, user_name)).hexdigest().encode()
             return passw
@@ -476,7 +479,7 @@ def admin_show_log(log_id=None):
                 log = database.select('''SELECT * FROM cantina_administration.log WHERE ID=%s''', (log_id,), 1)
                 return render_template('admin/specific_log.html', log=log)
             else:
-                all_log = database.select('''SELECT * FROM log''')
+                all_log = database.select('''SELECT * FROM cantina_administration.log''')
                 return render_template('admin/show_log.html', all_log=all_log)
     except Exception as error:
         make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(error))
