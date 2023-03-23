@@ -237,11 +237,9 @@ def file():
 
     elif args.get('action') == "shareFile" and args.get('workFile') and args.get('loginToShow'):
         if row[1]:
-            copy2(secure_filename(dir_path + actual_path + args.get('workFile')),
-                  secure_filename(share_path + '/' + row[2] + '/' + args.get('workFile')))
+            copy2(dir_path + actual_path + args.get('workFile'), share_path + '/' + row[2] + '/' + args.get('workFile'))
         elif not row[1]:
-            copy2(secure_filename(row[0] + '/' + actual_path + args.get('workFile')),
-                  secure_filename(share_path + row[2] + '/' + args.get('workFile')))
+            copy2(row[0] + '/' + actual_path + args.get('workFile'), share_path + row[2] + '/' + args.get('workFile'))
         if args.get('loginToShow') == '0':
             database.insert('''INSERT INTO cantina_cloud.file_sharing(file_name, file_owner, file_short_name, 
             login_to_show, password) VALUES (%s, %s, %s, %s, %s)''', (args.get('workFile'), row[2], rand_name,
@@ -258,11 +256,11 @@ def file():
 
     elif args.get('action') == "shareFolder" and args.get('workFolder') and args.get('loginToShow'):
         if row[1]:
-            make_tarfile(secure_filename(share_path + '/' + row[2] + '/' + args.get('workFolder') + '.tar.gz'),
-                         secure_filename(dir_path + actual_path + args.get('workFolder')))
+            make_tarfile(share_path + '/' + row[2] + '/' + args.get('workFolder') + '.tar.gz',
+                         dir_path + actual_path + args.get('workFolder'))
         elif not row[1]:
-            make_tarfile(secure_filename(share_path + '/' + row[2] + '/' + args.get('workFolder') + '.tar.gz'),
-                         secure_filename(row[0] + '/' + actual_path + args.get('workFolder')))
+            make_tarfile(share_path + '/' + row[2] + '/' + args.get('workFolder') + '.tar.gz',
+                         row[0] + '/' + actual_path + args.get('workFolder'))
         database.insert('''INSERT INTO cantina_cloud.file_sharing(file_name, file_owner, file_short_name, login_to_show, 
         password) VALUES (%s, %s, %s, %s, %s)''', (args.get('workFolder') + '.tar.gz', row[2], rand_name,
                                                    args.get('loginToShow'),
