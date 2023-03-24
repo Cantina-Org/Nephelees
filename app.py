@@ -144,7 +144,6 @@ def file():
 
     row = database.select(f'''SELECT work_Dir, admin, user_name FROM cantina_administration.user WHERE token = %s''',
                           (user_token,), 1)
-    print(dir_path)
     if not args.getlist('path'):
         if row[1]:
             for (dirpath, dirnames, filenames) in walk(dir_path):
@@ -184,7 +183,6 @@ def file():
                 break
 
     if not args.get('action') or args.get('action') == 'show':
-        print(actual_path, work_dir, work_file_in_dir)
         return render_template('myfile.html', dir=work_dir, file=work_file_in_dir, path=actual_path,
                                lastPath=lastPath, git_repo=git_repo)
 
