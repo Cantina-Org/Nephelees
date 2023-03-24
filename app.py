@@ -13,8 +13,10 @@ from string import ascii_lowercase
 from tarfile import open as tar_open
 from json import load
 from hashlib import sha256, new
-from Utils.database import DataBase
 
+import Cogs.home
+from Utils.database import DataBase
+from Cogs import *
 
 def f_user_name(user_id):
     data = database.select("""SELECT user_name FROM cantina_administration.user WHERE token=%s""", (user_id,), 1)
@@ -115,14 +117,7 @@ database.create_table(
 # Fonction définissant la racine de Cantina Cloud
 @app.route('/')
 def home():
-    if not request.cookies.get('userID'):
-        return redirect(url_for('login'))
-    data = database.select('''SELECT user_name, admin FROM cantina_administration.user WHERE token = %s''',
-                           (request.cookies.get('userID'),), 1)
-    try:
-        return render_template('home.html', cur=data)
-    except IndexError:
-        return redirect(url_for('login'))
+    return Cogs.home.home_cogs(request, database)
 
 
 # Fonction permettant de voire les fichiers de Cantina Cloud
