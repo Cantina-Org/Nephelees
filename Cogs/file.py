@@ -4,6 +4,7 @@ from flask import redirect, url_for, render_template, abort
 from random import choices
 from os import walk, mkdir, system, remove
 from werkzeug.utils import secure_filename
+from Utils.utils import make_tarfile, salt_password
 
 
 fd, filenames, lastPath = "", "", ""
@@ -145,7 +146,7 @@ def file_cogs(ctx, database, dir_path, share_path):
             database.insert('''INSERT INTO cantina_cloud.file_sharing(file_name, file_owner, file_short_name, 
                 login_to_show, password) VALUES (%s, %s, %s, %s, %s)''', (args.get('workFile'), row[2], rand_name,
                                                                           args.get('loginToShow'), salt_password(
-                args.get('password'), row[2])))
+                args.get('password'), row[2], ctx, database)))
 
         return render_template("redirect/r-myfile-clipboardcopy.html", short_name=rand_name,
                                path="/file/?path=" + actual_path)
@@ -174,7 +175,7 @@ def file_cogs(ctx, database, dir_path, share_path):
         database.insert('''INSERT INTO cantina_cloud.file_sharing(file_name, file_owner, file_short_name, login_to_show, 
             password) VALUES (%s, %s, %s, %s, %s)''', (args.get('workFolder') + '.tar.gz', row[2], rand_name,
                                                        args.get('loginToShow'),
-                                                       salt_password(args.get('password'), row[2])))
+                                                       salt_password(args.get('password'), row[2], ctx, database)))
         return render_template("redirect/r-myfile-clipboardcopy.html", short_name=rand_name,
                                path="/file/?path=" + actual_path)
 
