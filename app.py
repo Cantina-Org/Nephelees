@@ -1,6 +1,6 @@
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, url_for, redirect, make_response, send_from_directory, jsonify, \
-    escape
+    escape, abort
 from time import sleep
 from argon2 import argon2_hash
 from datetime import datetime
@@ -243,7 +243,7 @@ def file():
                 copy2(dir_path + actual_path + args.get('workFile'),
                       share_path + '/' + row[2] + '/' + args.get('workFile'))
             except PermissionError:
-                return 403
+                return abort(403)
         elif not row[1]:
             try:
                 copy2(row[0] + '/' + actual_path + args.get('workFile'),
@@ -253,7 +253,7 @@ def file():
                 copy2(row[0] + '/' + actual_path + args.get('workFile'),
                       share_path + row[2] + '/' + args.get('workFile'))
             except PermissionError:
-                return 403
+                return abort(403)
         if args.get('loginToShow') == '0':
             database.insert('''INSERT INTO cantina_cloud.file_sharing(file_name, file_owner, file_short_name, 
             login_to_show, password) VALUES (%s, %s, %s, %s, %s)''', (args.get('workFile'), row[2], rand_name,
