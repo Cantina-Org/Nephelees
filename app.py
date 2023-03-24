@@ -235,7 +235,15 @@ def file():
 
     elif args.get('action') == "shareFile" and args.get('workFile') and args.get('loginToShow'):
         if row[1]:
-            copy2(dir_path + actual_path + args.get('workFile'), share_path + '/' + row[2] + '/' + args.get('workFile'))
+            try:
+                copy2(dir_path + actual_path + args.get('workFile'),
+                      share_path + '/' + row[2] + '/' + args.get('workFile'))
+            except FileNotFoundError:
+                mkdir(share_path + '/' + row[2])
+                copy2(dir_path + actual_path + args.get('workFile'),
+                      share_path + '/' + row[2] + '/' + args.get('workFile'))
+            except PermissionError:
+                return 403
         elif not row[1]:
             copy2(row[0] + '/' + actual_path + args.get('workFile'), share_path + row[2] + '/' + args.get('workFile'))
         if args.get('loginToShow') == '0':
@@ -688,6 +696,11 @@ def add_user_api():
 @app.errorhandler(404)
 def page_not_found(error):
     return render_template('error/404.html'), 404
+
+
+@app.errorhandler(403)
+def acces_denied(error):
+    return render_template('error/403.html'), 403
 
 
 if __name__ == '__main__':
