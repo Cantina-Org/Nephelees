@@ -144,7 +144,6 @@ def file():
 
     row = database.select(f'''SELECT work_Dir, admin, user_name FROM cantina_administration.user WHERE token = %s''',
                           (user_token,), 1)
-    print(dir_path)
     if not args.getlist('path'):
         if row[1]:
             for (dirpath, dirnames, filenames) in walk(dir_path):
@@ -184,7 +183,6 @@ def file():
                 break
 
     if not args.get('action') or args.get('action') == 'show':
-        print(actual_path, work_dir, work_file_in_dir)
         return render_template('myfile.html', dir=work_dir, file=work_file_in_dir, path=actual_path,
                                lastPath=lastPath, git_repo=git_repo)
 
@@ -237,9 +235,25 @@ def file():
 
     elif args.get('action') == "shareFile" and args.get('workFile') and args.get('loginToShow'):
         if row[1]:
-            copy2(dir_path + actual_path + args.get('workFile'), share_path + '/' + row[2] + '/' + args.get('workFile'))
+            try:
+                copy2(dir_path + actual_path + args.get('workFile'),
+                      share_path + '/' + row[2] + '/' + args.get('workFile'))
+            except FileNotFoundError:
+                mkdir(share_path + '/' + row[2])
+                copy2(dir_path + actual_path + args.get('workFile'),
+                      share_path + '/' + row[2] + '/' + args.get('workFile'))
+            except PermissionError:
+                return 403
         elif not row[1]:
-            copy2(row[0] + '/' + actual_path + args.get('workFile'), share_path + row[2] + '/' + args.get('workFile'))
+            try:
+                copy2(row[0] + '/' + actual_path + args.get('workFile'),
+                      share_path + row[2] + '/' + args.get('workFile'))
+            except FileNotFoundError:
+                mkdir(share_path + '/' + row[2])
+                copy2(row[0] + '/' + actual_path + args.get('workFile'),
+                      share_path + row[2] + '/' + args.get('workFile'))
+            except PermissionError:
+                return 403
         if args.get('loginToShow') == '0':
             database.insert('''INSERT INTO cantina_cloud.file_sharing(file_name, file_owner, file_short_name, 
             login_to_show, password) VALUES (%s, %s, %s, %s, %s)''', (args.get('workFile'), row[2], rand_name,
@@ -256,11 +270,25 @@ def file():
 
     elif args.get('action') == "shareFolder" and args.get('workFolder') and args.get('loginToShow'):
         if row[1]:
-            make_tarfile(share_path + '/' + row[2] + '/' + args.get('workFolder') + '.tar.gz',
-                         dir_path + actual_path + args.get('workFolder'))
+            try:
+                make_tarfile(share_path + '/' + row[2] + '/' + args.get('workFolder') + '.tar.gz',
+                             dir_path + actual_path + args.get('workFolder'))
+            except FileNotFoundError:
+                mkdir(share_path + '/' + row[2])
+                make_tarfile(share_path + '/' + row[2] + '/' + args.get('workFolder') + '.tar.gz',
+                             dir_path + actual_path + args.get('workFolder'))
+            except PermissionError:
+                return 403
         elif not row[1]:
-            make_tarfile(share_path + '/' + row[2] + '/' + args.get('workFolder') + '.tar.gz',
-                         row[0] + '/' + actual_path + args.get('workFolder'))
+            try:
+                make_tarfile(share_path + '/' + row[2] + '/' + args.get('workFolder') + '.tar.gz',
+                             row[0] + '/' + actual_path + args.get('workFolder'))
+            except FileNotFoundError:
+                mkdir(share_path + '/' + row[2])
+                make_tarfile(share_path + '/' + row[2] + '/' + args.get('workFolder') + '.tar.gz',
+                             row[0] + '/' + actual_path + args.get('workFolder'))
+            except PermissionError:
+                return 403
         database.insert('''INSERT INTO cantina_cloud.file_sharing(file_name, file_owner, file_short_name, login_to_show, 
         password) VALUES (%s, %s, %s, %s, %s)''', (args.get('workFolder') + '.tar.gz', row[2], rand_name,
                                                    args.get('loginToShow'),
@@ -690,6 +718,11 @@ def add_user_api():
 @app.errorhandler(404)
 def page_not_found(error):
     return render_template('error/404.html'), 404
+
+
+@app.errorhandler(403)
+def acces_denied(error):
+    return render_template('error/403.html'), 403
 
 
 if __name__ == '__main__':
