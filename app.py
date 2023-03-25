@@ -12,7 +12,7 @@ from Utils.database import DataBase
 from Utils.utils import f_user_name, salt_password, user_login, make_log
 from Cogs.home import home_cogs
 from Cogs.file import file_cogs
-
+from Cogs.upload_file import upload_file_cogs
 
 dir_path = path.abspath(getcwd()) + '/file_cloud'
 share_path = path.abspath(getcwd()) + '/share'
@@ -72,30 +72,7 @@ def file():
 # Fonction permettant d'upload un fichier dans le dossier dans lequelle on est
 @app.route('/file/upload', methods=['GET', 'POST'])
 def upload_file():
-    args = request.args
-
-    if request.method == 'GET':
-        return render_template('upload_file.html')
-
-    elif request.method == 'POST':
-        user_token = request.cookies.get('userID')
-        user_check = user_login(database, request)
-
-        if user_check == 'UserNotFound':
-            return redirect(url_for('login'))
-        elif user_check[1]:
-            f = request.files['file']
-            f.save(path.join(dir_path + args.get('path'), secure_filename(f.filename)))
-            make_log('upload_file', request.remote_addr, request.cookies.get('userID'), 1,
-                     path.join(dir_path + args.get('path'), secure_filename(f.filename)))
-            return redirect(url_for('file', path=args.get('path')))
-        elif not user_check[1]:
-            f = request.files['file']
-            f.save(path.join(dir_path + '/' + f_user_name(user_token, database) + args.get('path'),
-                             secure_filename(f.filename)))
-            make_log('upload_file', request.remote_addr, request.cookies.get('userID'), 1,
-                     path.join(dir_path + args.get('path'), secure_filename(f.filename)))
-            return redirect(url_for('file', path=args.get('path')))
+    return upload_file_cogs(request, database, dir_path)
 
 
 # Fonction permettant de télécharger le fichier sélectionné
