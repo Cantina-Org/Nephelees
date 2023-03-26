@@ -1,12 +1,8 @@
-from werkzeug.utils import secure_filename
-from flask import Flask, render_template, request, url_for, redirect, jsonify, escape
+from flask import Flask, render_template, request
 from time import sleep
 from os import path, getcwd
-from uuid import uuid1, uuid3
 from json import load
-from hashlib import new
 from Utils.database import DataBase
-from Utils.utils import salt_password, user_login, make_log
 from Cogs.home import home_cogs
 from Cogs.file import file_cogs
 from Cogs.upload_file import upload_file_cogs
@@ -21,6 +17,9 @@ from Cogs.admin.show_log import show_log_cogs
 from Cogs.admin.show_share_file import show_share_file_cogs
 from Cogs.admin.api_manager import api_manager_cogs
 from Cogs.admin.add_api import add_api_cogs
+from Cogs.api.test_connection import test_connection_cogs
+from Cogs.api.show_permission import show_permission_cogs
+from Cogs.api.add_user import add_user_api_cogs
 
 dir_path = path.abspath(getcwd()) + '/file_cloud'
 share_path = path.abspath(getcwd()) + '/share'
@@ -170,92 +169,17 @@ def admin_add_api():
 
 @app.route('/api/v1/test_connection', methods=['GET'])
 def test_connection():
-    content = request.json
-    row1 = database.select('''SELECT * FROM cantina_cloud.api where token=%s''', (escape(content['api-token']),), 1)
-    make_log('test_connection', request.remote_addr, content['api-token'], 4, content['api-token'])
-    return jsonify({
-        "status-code": "200",
-        "api-id": row1[0],
-        "api-token": escape(content['api-token']),
-        "api-name": row1[2],
-        "api-desc": row1[3],
-        "owner": row1[4],
-    })
+    return test_connection_cogs(request, database)
 
 
 @app.route('/api/v1/show_permission', methods=['GET'])
 def show_permission():
-    content = request.json
-    row1 = database.select('''SELECT * FROM cantina_cloud.api where token=%s''', (escape(content['api-token']),), 1)
-    row2 = database.select('''SELECT * FROM cantina_cloud.api_permission where token_api=%s''',
-                           (escape(content['api-token']),), 1)
-    make_log('show_permission', request.remote_addr, escape(content['api-token']), 4, escape(content['api-token']))
-
-    return jsonify({
-        "status-code": "200",
-        "api-token": escape(content['api-token']),
-        "api-name": row1[2],
-        "permission": {
-            "create_file": row2[1],
-            "upload_file": row2[2],
-            "delete_file": row2[3],
-            "create_folder": row2[4],
-            "delete_folder": row2[5],
-            "share_file_and_folder": row2[6],
-            "delete_share_file_and_folder": row2[7],
-            "create_user": row2[8],
-            "delete_user": row2[9],
-        }
-    })
+    return show_permission_cogs(request, database)
 
 
 @app.route('/api/v1/add_user', methods=['POST'])
 def add_user_api():
-    admin = False
-    content = request.json
-    row1 = database.select('''SELECT * FROM cantina_cloud.api where token=%s''', (escape(content['api-token']),), 1)
-    row2 = database.select('''SELECT * FROM cantina_cloud.api_permission where token_api=%s''',
-                           (escape(content['api-token']),), 1)
-    if row2[8]:
-        try:
-            new_salt = new('sha256').hexdigest()
-            new_uuid = str(uuid3(uuid1(), str(uuid1())))
-            if content['admin'] == 1:
-                admin = True
-
-            database.insert('''INSERT INTO cantina_administration.user(token, user_name, salt, password, admin, 
-            work_Dir)  VALUES (%s, %s, %s, %s, %s, %s)''', (new_uuid, escape(content['username']), new_salt,
-                                                            salt_password(content['password'], new_salt, database,
-                                                                          request),
-                                                            admin,
-                                                            dir_path + '/' + secure_filename(content['username'])))
-            make_log('add_user_api', request.remote_addr, request.cookies.get('userID'), 4,
-                     'Created User token: ' + new_uuid, escape(content['api-token']))
-            return jsonify({
-                "status-code": "200",
-                "api-token": escape(content['api-token']),
-                "user-to-create": escape(content['username']),
-                "user-passsword-to-create": escape(content['password']),
-                "user-permission-to-create": escape(content['admin']),
-                "user-token-create": new_uuid
-            })
-        except KeyError as error:
-            return 'L\'argument {} est manquant!'.format(str(error))
-    else:
-        if row1:
-            make_log('add_api_error', request.remote_addr, content['api-token'], 4,
-                     'Not enough permission', content['api-token'])
-            return jsonify({
-                "status-code": "401",
-                "details": "You don't have the permission to use that"
-            })
-        else:
-            make_log('add_api_error', request.remote_addr, content['api-token'], 4,
-                     'Not logged in', content['username'])
-            return jsonify({
-                "status-code": "401",
-                "details": "You must be login to use that"
-            })
+    return add_user_api_cogs(request, database, dir_path)
 
 
 @app.errorhandler(404)
