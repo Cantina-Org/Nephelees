@@ -17,6 +17,8 @@ from Cogs.logout import logout_cogs
 from Cogs.admin.home import home_admin_cogs
 from Cogs.admin.show_user import show_user_cogs
 from Cogs.admin.add_user import add_user_cogs
+from Cogs.admin.show_log import show_log_cogs
+from Cogs.admin.show_share_file import show_share_file_cogs
 
 dir_path = path.abspath(getcwd()) + '/file_cloud'
 share_path = path.abspath(getcwd()) + '/share'
@@ -126,43 +128,14 @@ def admin_add_user():
 @app.route('/admin/show_log/')
 @app.route('/admin/show_log/<log_id>')
 def admin_show_log(log_id=None):
-    try:
-        admin_and_login = user_login(database, request)
-        if admin_and_login[0] and admin_and_login[1]:
-            if log_id:
-                log = database.select('''SELECT * FROM cantina_administration.log WHERE ID=%s''', (log_id,), 1)
-                return render_template('admin/specific_log.html', log=log)
-            else:
-                all_log = database.select('''SELECT * FROM cantina_administration.log''')
-                return render_template('admin/show_log.html', all_log=all_log)
-    except Exception as error:
-        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(error))
-        return redirect(url_for('home'))
+    return show_log_cogs(request, database, log_id)
 
 
 # Fonction permettant de voire tout les fichiers partagé
 @app.route('/admin/show_share_file/')
 @app.route('/admin/show_share_file/<random_name>')
 def admin_show_share_file(random_name=None):
-    admin_and_login = user_login(database, request)
-    if admin_and_login[0] and admin_and_login[1]:
-        user_name = database.select('''SELECT user_name FROM cantina_administration.user WHERE token=%s''',
-                                    (request.cookies.get('userID'),), 1)
-        try:
-            row = database.select('''SELECT file_name, file_owner FROM cantina_cloud.file_sharing WHERE 
-            file_short_name=%s''', (random_name,), 1)
-            if random_name:
-                remove(share_path + '/' + row[1] + '/' + row[0])
-                database.insert('''DELETE FROM cantina_cloud.file_sharing WHERE file_short_name = %s;''', (random_name,)
-                                )
-        except Exception as error:
-            make_log('Error', request.remote_addr, request.cookies.get('userID'), 2, str(error))
-        all_share_file = database.select('''SELECT * FROM cantina_cloud.file_sharing''')
-        return render_template('admin/show_share_file.html', user_name=user_name, all_share_file=all_share_file)
-
-    else:
-        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, database)
-        return redirect(url_for('home'))
+    return show_share_file_cogs(request, database, share_path, random_name)
 
 
 # Fonction permettant de voire les API créer sur Cantina Cloud
