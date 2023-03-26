@@ -20,6 +20,7 @@ from Cogs.admin.add_user import add_user_cogs
 from Cogs.admin.show_log import show_log_cogs
 from Cogs.admin.show_share_file import show_share_file_cogs
 from Cogs.admin.api_manager import api_manager_cogs
+from Cogs.admin.add_api import add_api_cogs
 
 dir_path = path.abspath(getcwd()) + '/file_cloud'
 share_path = path.abspath(getcwd()) + '/share'
@@ -149,57 +150,7 @@ def admin_api_manager(api_id=None):
 # Fonction permettant de créer une API Cantina Cloud
 @app.route('/admin/add_api/', methods=['POST', 'GET'])
 def admin_add_api():
-    api_create_file, api_upload_file, api_delete_file, api_create_folder, api_delete_folder, api_share_file_folder, \
-        api_delete_share_file_folder, api_delete_user, api_create_user = 0, 0, 0, 0, 0, 0, 0, 0, 0
-    admin_and_login = user_login(database, request)
-    if admin_and_login[0] and admin_and_login[1]:
-        if request.method == 'GET':
-            user_name = database.select('''SELECT user_name FROM cantina_administration.user WHERE token=%s''',
-                                        (request.cookies.get('userID'),))
-
-            return render_template('admin/add_api.html', user_name=user_name)
-        elif request.method == 'POST':
-            if request.form.get('api_create_file'):
-                api_create_file = 1
-            if request.form.get('api_upload_file'):
-                api_upload_file = 1
-            if request.form.get('api_delete_file'):
-                api_delete_file = 1
-            if request.form.get('api_create_folder'):
-                api_create_folder = 1
-            if request.form.get('api_delete_folder'):
-                api_delete_folder = 1
-            if request.form.get('api_share_file_folder'):
-                api_share_file_folder = 1
-            if request.form.get('api_delete_share_file_folder'):
-                api_delete_share_file_folder = 1
-            if request.form.get('api_create_user'):
-                api_create_user = 1
-            if request.form.get('api_delete_user'):
-                api_delete_user = 1
-
-            new_uuid = str(uuid3(uuid1(), str(uuid1())))
-            database.insert('''INSERT INTO cantina_cloud.api(token, api_name, api_desc, owner) VALUES (%s, %s, %s, 
-            %s)''', (new_uuid, request.form.get('api-name'), request.form.get('api-desc'), request.cookies.get(
-                'userID')))
-            database.insert('''INSERT INTO cantina_cloud.api_permission(token_api, create_file, upload_file, 
-            delete_file, create_folder, delete_folder, share_file_and_folder, delete_share_file_and_folder, 
-            create_user, delete_user) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''', (new_uuid, api_create_file,
-                                                                                           api_upload_file,
-                                                                                           api_delete_file,
-                                                                                           api_create_folder,
-                                                                                           api_delete_folder,
-                                                                                           api_share_file_folder,
-                                                                                           api_delete_share_file_folder,
-                                                                                           api_create_user,
-                                                                                           api_delete_user))
-
-            make_log('add_api', request.remote_addr, request.cookies.get('userID'), 2,
-                     'Created API token: ' + new_uuid)
-            return redirect(url_for('admin_api_manager'))
-    else:
-        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, database)
-        return redirect(url_for('home'))
+    return add_api_cogs(request, database)
 
 
 ########################################################################################################################
