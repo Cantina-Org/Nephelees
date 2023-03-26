@@ -1,7 +1,7 @@
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, url_for, redirect, jsonify, escape
 from time import sleep
-from os import path, getcwd, remove
+from os import path, getcwd
 from uuid import uuid1, uuid3
 from json import load
 from hashlib import new
@@ -19,6 +19,7 @@ from Cogs.admin.show_user import show_user_cogs
 from Cogs.admin.add_user import add_user_cogs
 from Cogs.admin.show_log import show_log_cogs
 from Cogs.admin.show_share_file import show_share_file_cogs
+from Cogs.admin.api_manager import api_manager_cogs
 
 dir_path = path.abspath(getcwd()) + '/file_cloud'
 share_path = path.abspath(getcwd()) + '/share'
@@ -142,17 +143,7 @@ def admin_show_share_file(random_name=None):
 @app.route('/admin/api_manager/')
 @app.route('/admin/api_manager/<api_id>')
 def admin_api_manager(api_id=None):
-    admin_and_login = user_login(database, request)
-    if admin_and_login[0] and admin_and_login[1]:
-        if api_id:
-            api = database.select('''SELECT * FROM cantina_cloud.api WHERE ID=%s''', (api_id,))
-            return render_template('admin/specific_api_manager.html', api=api[0])
-        else:
-            api = database.select('''SELECT * FROM cantina_cloud.api''')
-            return render_template('admin/api_manager.html', api=api)
-    else:
-        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, database)
-        return redirect(url_for('home'))
+    return api_manager_cogs(request, database, api_id)
 
 
 # Fonction permettant de créer une API Cantina Cloud
