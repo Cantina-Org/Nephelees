@@ -1,6 +1,5 @@
 from werkzeug.utils import secure_filename
-from flask import Flask, render_template, request, url_for, redirect, make_response, send_from_directory, jsonify, \
-    escape
+from flask import Flask, render_template, request, url_for, redirect, make_response, jsonify, escape
 from time import sleep
 from datetime import datetime
 from os import path, getcwd, walk, remove, mkdir
@@ -14,6 +13,7 @@ from Cogs.home import home_cogs
 from Cogs.file import file_cogs
 from Cogs.upload_file import upload_file_cogs
 from Cogs.download_file import download_file_cogs
+from Cogs.file_share import file_share_cogs
 
 dir_path = path.abspath(getcwd()) + '/file_cloud'
 share_path = path.abspath(getcwd()) + '/share'
@@ -85,25 +85,7 @@ def download_file():
 # Fonction permettant de voire les fichiers partagé
 @app.route('/file_share/<short_name>')
 def file_share(short_name=None):
-    row = database.select('''SELECT * FROM cantina_cloud.file_sharing WHERE file_short_name=%s''', (short_name,), 1)
-    is_login = user_login(database, request)
-    if not row[4]:
-        if not row[5]:
-            return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
-        elif row[5] != "" and request.args.get('password') != "":
-            data = database.select('''SELECT salt FROM cantina_administration.user WHERE user_name=%s''', (row[2],), 1)
-            if salt_password(request.args.get('password'), data, database, request) == row[5]:
-                return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
-            else:
-                return render_template('redirect/r-share-file-with-password.html', short_name=short_name)
-        elif row[5] != "" and request.args.get('password') == "":
-            return render_template('redirect/r-share-file-with-password.html', short_name=short_name)
-
-    elif row[4]:
-        if is_login[0]:
-            return send_from_directory(directory=share_path + '/' + row[2], path=row[1])
-        elif is_login == 'UserNotFound':
-            return url_for('login')
+    return file_share_cogs(request, database, share_path, short_name)
 
 
 # Fonction permettant de se connecter à Cantina Cloud
