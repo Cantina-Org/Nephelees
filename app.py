@@ -1,5 +1,5 @@
 from werkzeug.utils import secure_filename
-from flask import Flask, render_template, request, url_for, redirect, make_response, jsonify, escape
+from flask import Flask, render_template, request, url_for, redirect, jsonify, escape
 from time import sleep
 from os import path, getcwd, walk, remove, mkdir
 from subprocess import check_output
@@ -14,6 +14,7 @@ from Cogs.upload_file import upload_file_cogs
 from Cogs.download_file import download_file_cogs
 from Cogs.file_share import file_share_cogs
 from Cogs.login import login_cogs
+from Cogs.logout import logout_cogs
 
 dir_path = path.abspath(getcwd()) + '/file_cloud'
 share_path = path.abspath(getcwd()) + '/share'
@@ -97,10 +98,7 @@ def login():
 # Fonction permettant de se déconnecter de Cantina Cloud
 @app.route('/logout', methods=['POST', 'GET'])
 def logout():
-    make_log('logout', request.remote_addr, request.cookies.get('userID'), 1, database)
-    resp = make_response(redirect(url_for('home')))
-    resp.set_cookie('userID', '', expires=0)
-    return resp
+    return logout_cogs(request, database)
 
 
 # Fonction permettant de voire la page 'principale' du panel Admin de Cantina Cloud 
