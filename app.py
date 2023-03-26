@@ -1,8 +1,7 @@
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, url_for, redirect, jsonify, escape
 from time import sleep
-from os import path, getcwd, walk, remove, mkdir
-from subprocess import check_output
+from os import path, getcwd, remove, mkdir
 from uuid import uuid1, uuid3
 from json import load
 from hashlib import new
@@ -15,6 +14,7 @@ from Cogs.download_file import download_file_cogs
 from Cogs.file_share import file_share_cogs
 from Cogs.login import login_cogs
 from Cogs.logout import logout_cogs
+from Cogs.admin.home import home_admin_cogs
 
 dir_path = path.abspath(getcwd()) + '/file_cloud'
 share_path = path.abspath(getcwd()) + '/share'
@@ -104,23 +104,7 @@ def logout():
 # Fonction permettant de voire la page 'principale' du panel Admin de Cantina Cloud 
 @app.route('/admin/home')
 def admin_home():
-    try:
-        count = 0
-        admin_and_login = user_login(database, request)
-        if admin_and_login[0] and admin_and_login[1]:
-            for root_dir, cur_dir, files in walk(dir_path):
-                count += len(files)
-            main_folder_size = check_output(['du', '-sh', dir_path]).split()[0].decode('utf-8')
-            user_name = database.select('''SELECT user_name FROM cantina_administration.user WHERE token=%s''',
-                                        (request.cookies.get('userID'),))
-            return render_template('admin/home.html', data=user_name, file_number=count,
-                                   main_folder_size=main_folder_size)
-        else:
-            return redirect(url_for('home'))
-
-    except Exception as error:
-        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(error))
-        return redirect(url_for('home'))
+    return home_admin_cogs(request, database, dir_path)
 
 
 # Fonction permettant de visualiser les utilisateur de Cantina Cloud
