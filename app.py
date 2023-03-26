@@ -15,6 +15,7 @@ from Cogs.file_share import file_share_cogs
 from Cogs.login import login_cogs
 from Cogs.logout import logout_cogs
 from Cogs.admin.home import home_admin_cogs
+from Cogs.admin.show_user import show_user_cogs
 
 dir_path = path.abspath(getcwd()) + '/file_cloud'
 share_path = path.abspath(getcwd()) + '/share'
@@ -111,25 +112,7 @@ def admin_home():
 @app.route('/admin/usermanager/')
 @app.route('/admin/usermanager/<user_name>')
 def admin_show_user(user_name=None):
-    try:
-        admin_and_login = user_login(database, request)
-        if admin_and_login[0] and admin_and_login[1]:
-            if user_name:
-                user_account = database.select('''SELECT * FROM cantina_administration.user WHERE user_name=%s''',
-                                               (user_name,))
-
-                return render_template('admin/specific_user_manager.html', user_account=user_account[0])
-            else:
-                all_account = database.select(body='''SELECT * FROM cantina_administration.user''')
-                user_name = database.select('''SELECT user_name FROM cantina_administration.user WHERE token=%s''',
-                                            (request.cookies.get('userID'),))
-                return render_template('admin/user_manager.html', user_name=user_name,
-                                       all_account=all_account)
-        else:
-            return redirect(url_for('home'))
-    except Exception as error:
-        make_log('login_error', request.remote_addr, request.cookies.get('userID'), 2, str(error))
-        return redirect(url_for('home'))
+    return show_user_cogs(request, database, user_name)
 
 
 # Fonction permettant de créer un utilisateur
