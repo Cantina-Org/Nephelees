@@ -1,7 +1,7 @@
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, url_for, redirect, jsonify, escape
 from time import sleep
-from os import path, getcwd, remove, mkdir
+from os import path, getcwd, remove
 from uuid import uuid1, uuid3
 from json import load
 from hashlib import new
@@ -16,6 +16,7 @@ from Cogs.login import login_cogs
 from Cogs.logout import logout_cogs
 from Cogs.admin.home import home_admin_cogs
 from Cogs.admin.show_user import show_user_cogs
+from Cogs.admin.add_user import add_user_cogs
 
 dir_path = path.abspath(getcwd()) + '/file_cloud'
 share_path = path.abspath(getcwd()) + '/share'
@@ -118,46 +119,7 @@ def admin_show_user(user_name=None):
 # Fonction permettant de créer un utilisateur
 @app.route('/admin/add_user/', methods=['POST', 'GET'])
 def admin_add_user():
-    try:
-        admin = 0
-        admin_and_login = user_login(database, request)
-        if admin_and_login[0] and admin_and_login[1]:
-            if request.method == 'GET':
-                user_name = database.select('''SELECT user_name FROM cantina_administration.user WHERE token=%s''',
-                                            (request.cookies.get('userID'),))
-                return render_template('admin/add_user.html', user_name=user_name)
-            elif request.method == 'POST':
-
-                if request.form['pword1'] == request.form['pword2']:
-                    data = request.form
-                    new_uuid = str(uuid3(uuid1(), str(uuid1())))
-                    new_salt = new('sha256').hexdigest()
-                    try:
-                        for i in data:
-                            if i == 'admin':
-                                admin = 1
-                            else:
-                                pass
-
-                        database.insert('''INSERT INTO cantina_administration.user(token, user_name, salt, password, 
-                        admin, work_Dir) VALUES (%s, %s, %s, %s, %s, %s)''',
-                                        (new_uuid, request.form['uname'], new_salt,
-                                         salt_password(request.form['pword2'], new_salt, database, request,
-                                                       new_account=True),
-                                         admin,
-                                         dir_path + '/' + secure_filename(request.form['uname'])))
-
-                    except Exception as error:
-                        make_log('Error', request.remote_addr, request.cookies.get('userID'), 2, str(error))
-
-                    mkdir(dir_path + '/' + secure_filename(request.form['uname']))
-                    mkdir(share_path + '/' + secure_filename(request.form['uname']))
-                    make_log('add_user', request.remote_addr, request.cookies.get('userID'), 2,
-                             'Created user token: ' + new_uuid)
-                    return redirect(url_for('admin_show_user'))
-    except Exception as error:
-        make_log('Error', request.remote_addr, request.cookies.get('userID'), 2, str(error))
-        return redirect(url_for('home'))
+    return add_user_cogs(request, database, dir_path, share_path)
 
 
 # Fonction permettant de voire les logs générer par Cantina Cloud

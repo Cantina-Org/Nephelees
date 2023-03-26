@@ -1,5 +1,5 @@
 from flask import render_template, url_for, redirect
-from Utils.utils import user_login
+from Utils.utils import user_login, make_log
 
 
 def show_user_cogs(ctx, database, user_name=None):
@@ -17,4 +17,5 @@ def show_user_cogs(ctx, database, user_name=None):
             return render_template('admin/user_manager.html', user_name=user_name,
                                    all_account=all_account)
     else:
+        make_log('Error', ctx.remote_addr, ctx.cookies.get('userID'), 2, database)
         return redirect(url_for('home'))
