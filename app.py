@@ -1,7 +1,6 @@
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, url_for, redirect, make_response, jsonify, escape
 from time import sleep
-from datetime import datetime
 from os import path, getcwd, walk, remove, mkdir
 from subprocess import check_output
 from uuid import uuid1, uuid3
@@ -14,6 +13,7 @@ from Cogs.file import file_cogs
 from Cogs.upload_file import upload_file_cogs
 from Cogs.download_file import download_file_cogs
 from Cogs.file_share import file_share_cogs
+from Cogs.login import login_cogs
 
 dir_path = path.abspath(getcwd()) + '/file_cloud'
 share_path = path.abspath(getcwd()) + '/share'
@@ -91,25 +91,7 @@ def file_share(short_name=None):
 # Fonction permettant de se connecter à Cantina Cloud
 @app.route('/login', methods=['POST', 'GET'])
 def login():
-    if request.method == 'POST':
-        user = request.form['nm']
-        passwd = request.form['passwd']
-        row = database.select(f'''SELECT user_name, password, token FROM cantina_administration.user WHERE password = %s 
-        AND user_name = %s''', (salt_password(passwd, user, database, request), user), 1)
-
-        try:
-            make_log('login', request.remote_addr, row[2], 1, database)
-            resp = make_response(redirect(url_for('home')))
-            resp.set_cookie('userID', row[2])
-            database.insert('''UPDATE cantina_administration.user SET last_online=%s WHERE token=%s''',
-                            (datetime.now(), row[2]))
-            return resp
-        except Exception as error:
-            make_log('Error', request.remote_addr, request.cookies.get('userID'), 2, str(error))
-            return redirect(url_for("home"))
-
-    elif request.method == 'GET':
-        return render_template('login.html')
+    return login_cogs(request, database)
 
 
 # Fonction permettant de se déconnecter de Cantina Cloud
