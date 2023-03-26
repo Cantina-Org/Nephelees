@@ -9,10 +9,11 @@ from uuid import uuid1, uuid3
 from json import load
 from hashlib import new
 from Utils.database import DataBase
-from Utils.utils import f_user_name, salt_password, user_login, make_log
+from Utils.utils import salt_password, user_login, make_log
 from Cogs.home import home_cogs
 from Cogs.file import file_cogs
 from Cogs.upload_file import upload_file_cogs
+from Cogs.download_file import download_file_cogs
 
 dir_path = path.abspath(getcwd()) + '/file_cloud'
 share_path = path.abspath(getcwd()) + '/share'
@@ -78,20 +79,7 @@ def upload_file():
 # Fonction permettant de télécharger le fichier sélectionné
 @app.route('/file/download')
 def download_file():
-    args = request.args
-
-    user_token = request.cookies.get('userID')
-    user_check = user_login(database, request)
-
-    make_log('Download file', request.remote_addr, request.cookies.get('userID'), 1,
-             dir_path + args.get('path') + args.get('item'))
-    if user_check == 'UserNotFound':
-        return redirect(url_for('login'))
-    elif user_check[1]:
-        return send_from_directory(dir_path + args.get('path'), path=secure_filename(args.get('item')))
-    elif not user_check[1]:
-        return send_from_directory(dir_path + '/' + f_user_name(user_token, database) + args.get('path'),
-                                   path=secure_filename(args.get('item')))
+    return download_file_cogs(request, database, dir_path)
 
 
 # Fonction permettant de voire les fichiers partagé
