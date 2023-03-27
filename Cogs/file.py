@@ -44,7 +44,6 @@ def file_cogs(ctx, database, dir_path, share_path):
         for i in actual_path_not_corrected:
             if i:
                 actual_path += i + '/'
-        print(actual_path)
         last_path_1 = actual_path[:-1].split("/")
         for i in range(0, len(last_path_1) - 1):
             if last_path_1[i]:
