@@ -44,7 +44,6 @@ def file_cogs(ctx, database, dir_path, share_path):
         for i in actual_path_not_corrected:
             if i:
                 actual_path += i + '/'
-
         last_path_1 = actual_path[:-1].split("/")
         for i in range(0, len(last_path_1) - 1):
             if last_path_1[i]:
@@ -78,16 +77,16 @@ def file_cogs(ctx, database, dir_path, share_path):
 
     elif args.get('action') == "createFile" and args.get('workFile'):
         if row[1]:
-            fd = open(dir_path + args.get('path') + "/" + secure_filename(args.get('workFile')), 'r')
+            fd = open(dir_path + actual_path + secure_filename(args.get('workFile')), 'w')
         elif not row[1]:
-            fd = open(row[0] + '/' + args.get('path') + "/" + secure_filename(args.get('workFile')), 'r')
+            fd = open(row[0] + '/' + args.get('path') + "/" + secure_filename(args.get('workFile')), 'w')
 
         fd.close()
         return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "cloneRepo" and args.get('repoLink'):
         if row[1]:
-            system("cd " + dir_path + args.get('path') + "/ && git clone " + args.get('repoLink'))
+            system("cd " + dir_path + actual_path + " && git clone " + args.get('repoLink'))
         elif not row[1]:
             system("cd " + row[0] + '/' + args.get('path') + "/ && git clone " + args.get('repoLink'))
 
