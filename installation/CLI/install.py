@@ -3,7 +3,7 @@ from json import dumps
 from os import system, getuid
 from platform import uname
 from uuid import uuid1, uuid3
-from argon2 import argon2_hash
+from argon2 import PasswordHasher
 from pymysql import connect
 
 
