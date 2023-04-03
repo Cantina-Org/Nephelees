@@ -1,4 +1,4 @@
-# Cantina Cloud ☁
+# Néphélées ☁
 
 **A safe place for all your data.**
 
