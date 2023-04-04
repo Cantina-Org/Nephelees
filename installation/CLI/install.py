@@ -12,7 +12,7 @@ def salt_password(passwordtohash, user_name, new_account=False):
         if not new_account:
             pass
         else:
-            passw = sha256(argon2_hash(passwordtohash, user_name)).hexdigest().encode()
+            passw = sha256(ph.hash(passwordtohash)).hexdigest().encode()
             return passw
 
     except AttributeError as e:
@@ -26,6 +26,7 @@ CWAR = '\033[93m'
 based_on = None
 os_info = uname()
 database = [False, False]
+ph = PasswordHasher()
 
 if getuid() != 0:
     exit("L'installation doit être faite avec les permissions d'administrateur!")

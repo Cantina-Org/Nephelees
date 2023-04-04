@@ -1,6 +1,7 @@
 from hashlib import sha256
+from argon2 import PasswordHasher
 
-from argon2 import argon2_hash
+ph = PasswordHasher()
 
 
 def make_log(action_name, user_ip, user_token, log_level, database, argument=None, content=None,):
@@ -23,12 +24,12 @@ def salt_password(passwordtohash, user_name, database, ctx, new_account=False):
             try:
                 data = database.select('''SELECT salt FROM cantina_administration.user WHERE user_name=%s''',
                                        (user_name,), 1)
-                passw = sha256(argon2_hash(passwordtohash, data[0])).hexdigest().encode()
+                passw = sha256(ph.verify(passwordtohash, data[0])).hexdigest().encode()
                 return passw
             except Exception as e:
                 return 'User Not Found, ' + str(e)
         else:
-            passw = sha256(argon2_hash(passwordtohash, user_name)).hexdigest().encode()
+            passw = sha256(ph.hash(passwordtohash)).hexdigest().encode()
             return passw
 
     except AttributeError as error:
