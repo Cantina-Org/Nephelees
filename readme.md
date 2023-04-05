@@ -7,7 +7,7 @@
 * 📁 **Access your Data** You can store your files in YOUR server
 * 🙌 **Share your Data** …by giving others access to the stuff you want them to see.
 
-## Get your Cantina Cloud 🚚
+## Get your Nephelees 🚚
 
 Using Debian:
 ```wget https://github.com/Cantina-Org/cantina/releases/download/v0.3/catina-cloud-install-debian.sh | bash```<br>
