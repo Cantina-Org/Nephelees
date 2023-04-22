@@ -6,10 +6,10 @@ from Utils.utils import user_login, make_log, f_user_name
 def download_file_cogs(ctx, database, dir_path):
     args = ctx.args
 
-    user_token = ctx.cookies.get('userID')
+    user_token = ctx.cookies.get('token')
     user_check = user_login(database, ctx)
 
-    make_log('Download file', ctx.remote_addr, ctx.cookies.get('userID'), 1,
+    make_log('Download file', ctx.remote_addr, ctx.cookies.get('token'), 1,
              dir_path + args.get('path') + args.get('item'))
     if user_check == 'UserNotFound':
         return redirect(url_for('login'))

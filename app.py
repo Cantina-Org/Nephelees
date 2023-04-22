@@ -95,7 +95,7 @@ def file_share(short_name=None):
 
 
 # Fonction permettant de se connecter à Cantina Cloud
-@app.route('/login', methods=['POST', 'GET'])
+@app.route('/login')
 def login():
     return login_cogs(request, database)
 

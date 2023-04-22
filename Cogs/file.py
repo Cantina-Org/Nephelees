@@ -16,7 +16,7 @@ def file_cogs(ctx, database, dir_path, share_path):
     args = ctx.args
     work_file_in_dir, work_dir = [], []
     git_repo = False
-    user_token = ctx.cookies.get('userID')
+    user_token = ctx.cookies.get('token')
 
     # Redirection vers la connection si l'utilisateur n'est pas connecté
     if not user_token:
