@@ -12,9 +12,6 @@
         <h1 class="is-size-1"><a href="{{ url_for('home') }}">Cantina</a></h1><br>
         <h1 class="is-size-3">Bonjour {{ cur[0] }}!</h1><br>
         <a class="is-size-4" href="{{ url_for('file') }}">Mes fichiers</a><br>
-        {% if cur[1] %}
-            <a class="is-size-4" href="{{ url_for('admin_home') }}">Panel d'administration</a>
-        {% endif %}
     </div>
 </body>
 </html>

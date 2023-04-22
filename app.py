@@ -10,13 +10,6 @@ from Cogs.download_file import download_file_cogs
 from Cogs.file_share import file_share_cogs
 from Cogs.login import login_cogs
 from Cogs.logout import logout_cogs
-from Cogs.admin.home import home_admin_cogs
-from Cogs.admin.show_user import show_user_cogs
-from Cogs.admin.add_user import add_user_cogs
-from Cogs.admin.show_log import show_log_cogs
-from Cogs.admin.show_share_file import show_share_file_cogs
-from Cogs.admin.api_manager import api_manager_cogs
-from Cogs.admin.add_api import add_api_cogs
 from Cogs.api.test_connection import test_connection_cogs
 from Cogs.api.show_permission import show_permission_cogs
 from Cogs.api.add_user import add_user_api_cogs
