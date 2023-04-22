@@ -1,4 +1,6 @@
 from hashlib import sha256
+from os import path
+from tarfile import open as tar_open
 from argon2 import PasswordHasher
 
 ph = PasswordHasher()
@@ -29,7 +31,7 @@ def salt_password(passwordtohash, user_name, database, ctx, new_account=False):
             except Exception as e:
                 return 'User Not Found, ' + str(e)
         else:
-            passw = sha256(ph.hash(passwordtohash)).hexdigest().encode()
+            passw = sha256(ph.hash(passwordtohash).encode()).hexdigest().encode()
             return passw
 
     except AttributeError as error:
