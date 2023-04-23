@@ -10,13 +10,6 @@ from Cogs.download_file import download_file_cogs
 from Cogs.file_share import file_share_cogs
 from Cogs.login import login_cogs
 from Cogs.logout import logout_cogs
-from Cogs.admin.home import home_admin_cogs
-from Cogs.admin.show_user import show_user_cogs
-from Cogs.admin.add_user import add_user_cogs
-from Cogs.admin.show_log import show_log_cogs
-from Cogs.admin.show_share_file import show_share_file_cogs
-from Cogs.admin.api_manager import api_manager_cogs
-from Cogs.admin.add_api import add_api_cogs
 from Cogs.api.test_connection import test_connection_cogs
 from Cogs.api.show_permission import show_permission_cogs
 from Cogs.api.add_user import add_user_api_cogs
@@ -95,7 +88,7 @@ def file_share(short_name=None):
 
 
 # Fonction permettant de se connecter à Cantina Cloud
-@app.route('/login', methods=['POST', 'GET'])
+@app.route('/login')
 def login():
     return login_cogs(request, database)
 
@@ -104,53 +97,6 @@ def login():
 @app.route('/logout', methods=['POST', 'GET'])
 def logout():
     return logout_cogs(request, database)
-
-
-# Fonction permettant de voire la page 'principale' du panel Admin de Cantina Cloud 
-@app.route('/admin/home')
-def admin_home():
-    return home_admin_cogs(request, database, dir_path)
-
-
-# Fonction permettant de visualiser les utilisateur de Cantina Cloud
-@app.route('/admin/usermanager/')
-@app.route('/admin/usermanager/<user_name>')
-def admin_show_user(user_name=None):
-    return show_user_cogs(request, database, user_name)
-
-
-# Fonction permettant de créer un utilisateur
-@app.route('/admin/add_user/', methods=['POST', 'GET'])
-def admin_add_user():
-    return add_user_cogs(request, database, dir_path, share_path)
-
-
-# Fonction permettant de voire les logs générer par Cantina Cloud
-@app.route('/admin/show_log/')
-@app.route('/admin/show_log/<log_id>')
-def admin_show_log(log_id=None):
-    return show_log_cogs(request, database, log_id)
-
-
-# Fonction permettant de voire tout les fichiers partagé
-@app.route('/admin/show_share_file/')
-@app.route('/admin/show_share_file/<random_name>')
-def admin_show_share_file(random_name=None):
-    return show_share_file_cogs(request, database, share_path, random_name)
-
-
-# Fonction permettant de voire les API créer sur Cantina Cloud
-@app.route('/admin/api_manager/')
-@app.route('/admin/api_manager/<api_id>')
-def admin_api_manager(api_id=None):
-    return api_manager_cogs(request, database, api_id)
-
-
-# Fonction permettant de créer une API Cantina Cloud
-@app.route('/admin/add_api/', methods=['POST', 'GET'])
-def admin_add_api():
-    return add_api_cogs(request, database)
-
 
 ###########################################
 #                  API                    #
