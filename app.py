@@ -37,25 +37,6 @@ except Exception as e:
         print(e)
         exit(0)
 
-# Creation des tables des bases données
-database.create_table(
-    "CREATE TABLE IF NOT EXISTS cantina_administration.user(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT,  "
-    "user_name TEXT, salt TEXT, password TEXT, admin BOOL, work_Dir TEXT, last_online TEXT)")
-database.create_table(
-    "CREATE TABLE IF NOT EXISTS cantina_administration.log(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, name TEXT,  "
-    "user_ip text, user_token TEXT, argument TEXT, log_level INT, date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
-database.create_table(
-    "CREATE TABLE IF NOT EXISTS cantina_administration.file_sharing(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, "
-    "file_name TEXT, file_owner text, file_short_name TEXT, login_to_show BOOL DEFAULT 1, password TEXT, "
-    "date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
-database.create_table(
-    "CREATE TABLE IF NOT EXISTS cantina_administration.api(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT, token TEXT, "
-    "api_name TEXT, api_desc TEXT, owner TEXT)")
-database.create_table(
-    "CREATE TABLE IF NOT EXISTS cantina_administration.api_permission(token_api TEXT, create_file BOOL, upload_file "
-    "BOOL, delete_file BOOL, create_folder BOOL, delete_folder BOOL, share_file_and_folder BOOL, "
-    "delete_share_file_and_folder BOOL, create_user BOOL, delete_user BOOL)")
-
 
 # Fonction définissant la racine de Cantina Cloud
 @app.route('/')
@@ -69,7 +50,7 @@ def file():
     return file_cogs(request, database, share_path=share_path, dir_path=dir_path)
 
 
-# Fonction permettant d'upload un fichier dans le dossier dans lequelle on est
+# Fonction permettant upload un fichier dans le dossier courant
 @app.route('/file/upload', methods=['GET', 'POST'])
 def upload_file():
     return upload_file_cogs(request, database, dir_path)
@@ -81,7 +62,7 @@ def download_file():
     return download_file_cogs(request, database, dir_path)
 
 
-# Fonction permettant de voire les fichiers partagé
+# Fonction permettant de voire les fichiers partagés
 @app.route('/file_share/<short_name>')
 def file_share(short_name=None):
     return file_share_cogs(request, database, share_path, short_name)
@@ -102,6 +83,7 @@ def logout():
 #                  API                    #
 ###########################################
 
+
 @app.route('/api/v1/test_connection', methods=['GET'])
 def test_connection():
     return test_connection_cogs(request, database)
@@ -119,11 +101,13 @@ def add_user_api():
 
 @app.errorhandler(404)
 def page_not_found(error):
+    print(error)
     return render_template('error/404.html'), 404
 
 
 @app.errorhandler(403)
-def acces_denied(error):
+def access_denied(error):
+    print(error)
     return render_template('error/403.html'), 403
 
 
