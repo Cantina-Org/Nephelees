@@ -8,8 +8,8 @@ from Utils.utils import make_log, salt_password
 def add_user_api_cogs(ctx, database, dir_path):
     admin = False
     content = ctx.json
-    row1 = database.select('''SELECT * FROM cantina_cloud.api where token=%s''', (escape(content['api-token']),), 1)
-    row2 = database.select('''SELECT * FROM cantina_cloud.api_permission where token_api=%s''',
+    row1 = database.select('''SELECT * FROM cantina_administration.api where token=%s''', (escape(content['api-token']),), 1)
+    row2 = database.select('''SELECT * FROM cantina_administration.api_permission where token_api=%s''',
                            (escape(content['api-token']),), 1)
     if row2[8]:
         try:

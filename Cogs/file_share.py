@@ -3,7 +3,7 @@ from Utils.utils import salt_password, user_login
 
 
 def file_share_cogs(ctx, database, share_path, short_name=None):
-    row = database.select('''SELECT * FROM cantina_cloud.file_sharing WHERE file_short_name=%s''', (short_name,), 1)
+    row = database.select('''SELECT * FROM cantina_administration.file_sharing WHERE file_short_name=%s''', (short_name,), 1)
     is_login = user_login(database, ctx)
     if not row[4]:
         if not row[5]:

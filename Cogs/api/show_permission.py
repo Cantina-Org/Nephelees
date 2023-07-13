@@ -4,8 +4,9 @@ from flask import escape, jsonify
 
 def show_permission_cogs(ctx, database):
     content = ctx.json
-    row1 = database.select('''SELECT * FROM cantina_cloud.api where token=%s''', (escape(content['api-token']),), 1)
-    row2 = database.select('''SELECT * FROM cantina_cloud.api_permission where token_api=%s''',
+    row1 = database.select('''SELECT * FROM cantina_administration.api where token=%s''', (escape(content['api-token']),
+                                                                                           ), 1)
+    row2 = database.select('''SELECT * FROM cantina_administration.api_permission where token_api=%s''',
                            (escape(content['api-token']),), 1)
     make_log('show_permission', ctx.remote_addr, escape(content['api-token']), 4, escape(content['api-token']))
 

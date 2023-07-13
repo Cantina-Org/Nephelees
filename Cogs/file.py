@@ -137,12 +137,12 @@ def file_cogs(ctx, database, dir_path, share_path):
             except PermissionError:
                 return abort(403)
         if args.get('loginToShow') == '0':
-            database.insert('''INSERT INTO cantina_cloud.file_sharing(file_name, file_owner, file_short_name, 
+            database.insert('''INSERT INTO cantina_administration.file_sharing(file_name, file_owner, file_short_name, 
                 login_to_show, password) VALUES (%s, %s, %s, %s, %s)''', (args.get('workFile'), row[2], rand_name,
                                                                           args.get('loginToShow'), None))
 
         elif args.get('loginToShow') == '1':
-            database.insert('''INSERT INTO cantina_cloud.file_sharing(file_name, file_owner, file_short_name, 
+            database.insert('''INSERT INTO cantina_administration.file_sharing(file_name, file_owner, file_short_name, 
                 login_to_show, password) VALUES (%s, %s, %s, %s, %s)''', (args.get('workFile'), row[2], rand_name,
                                                                           args.get('loginToShow'), salt_password(
                 args.get('password'), row[2], ctx, database)))
