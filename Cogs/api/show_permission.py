@@ -8,7 +8,7 @@ def show_permission_cogs(ctx, database):
                                                                                            ), 1)
     row2 = database.select('''SELECT * FROM cantina_administration.api_permission where token_api=%s''',
                            (escape(content['api-token']),), 1)
-    make_log('show_permission', ctx.remote_addr, escape(content['api-token']), 4, escape(content['api-token']))
+    make_log(database, 'show_permission', ctx.remote_addr, escape(content['api-token']), 4, escape(content['api-token']))
 
     return jsonify({
         "status-code": "200",

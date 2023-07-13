@@ -19,13 +19,13 @@ def upload_file_cogs(ctx, database, dir_path):
         elif user_check[1]:
             f = ctx.files['file']
             f.save(path.join(dir_path + args.get('path'), secure_filename(f.filename)))
-            make_log('upload_file', ctx.remote_addr, ctx.cookies.get('token'), 1, database,
+            make_log(database, 'upload_file', ctx.remote_addr, ctx.cookies.get('token'), 1, database,
                      path.join(dir_path + args.get('path'), secure_filename(f.filename)))
             return redirect(url_for('file', path=args.get('path')))
         elif not user_check[1]:
             f = ctx.files['file']
             f.save(path.join(dir_path + '/' + f_user_name(user_token, database) + args.get('path'),
                              secure_filename(f.filename)))
-            make_log('upload_file', ctx.remote_addr, ctx.cookies.get('token'), 1,
+            make_log(database, 'upload_file', ctx.remote_addr, ctx.cookies.get('token'), 1,
                      path.join(dir_path + args.get('path'), secure_filename(f.filename)))
             return redirect(url_for('file', path=args.get('path')))
