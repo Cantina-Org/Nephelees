@@ -8,8 +8,8 @@ from Utils.utils import make_log, salt_password
 def add_user_api_cogs(ctx, database, dir_path):
     admin = False
     content = ctx.json
-    row1 = database.select('''SELECT * FROM cantina_cloud.api where token=%s''', (escape(content['api-token']),), 1)
-    row2 = database.select('''SELECT * FROM cantina_cloud.api_permission where token_api=%s''',
+    row1 = database.select('''SELECT * FROM cantina_administration.api where token=%s''', (escape(content['api-token']),), 1)
+    row2 = database.select('''SELECT * FROM cantina_administration.api_permission where token_api=%s''',
                            (escape(content['api-token']),), 1)
     if row2[8]:
         try:
@@ -24,7 +24,7 @@ def add_user_api_cogs(ctx, database, dir_path):
                                                                               ctx),
                                                                 admin,
                                                                 dir_path + '/' + secure_filename(content['username'])))
-            make_log('add_user_api', ctx.remote_addr, ctx.cookies.get('userID'), 4,
+            make_log(database, 'add_user_api', ctx.remote_addr, ctx.cookies.get('userID'), 4,
                      'Created User token: ' + new_uuid, escape(content['api-token']))
             return jsonify({
                 "status-code": "200",
@@ -38,15 +38,15 @@ def add_user_api_cogs(ctx, database, dir_path):
             return 'L\'argument {} est manquant!'.format(str(error))
     else:
         if row1:
-            make_log('add_api_error', ctx.remote_addr, content['api-token'], 4,
-                     'Not enough permission', content['api-token'])
+            make_log(database, 'add_api_error', ctx.remote_addr, content['api-token'], 4, 'Not enough permission',
+                     content['api-token'])
             return jsonify({
                 "status-code": "401",
                 "details": "You don't have the permission to use that"
             })
         else:
-            make_log('add_api_error', ctx.remote_addr, content['api-token'], 4,
-                     'Not logged in', content['username'])
+            make_log(database, 'add_api_error', ctx.remote_addr, content['api-token'], 4, 'Not logged in',
+                     content['username'])
             return jsonify({
                 "status-code": "401",
                 "details": "You must be login to use that"

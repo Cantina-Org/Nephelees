@@ -6,13 +6,14 @@ from argon2 import PasswordHasher
 ph = PasswordHasher()
 
 
-def make_log(action_name, user_ip, user_token, log_level, database, argument=None, content=None,):
+def make_log(database, action_name: str, user_ip: str, user_token: str, log_level: int, argument: str = None,
+             content: str = None):
     if content:
         database.insert('''INSERT INTO cantina_administration.log(name, user_ip, user_token, argument, log_level) 
-        VALUES (%s, %s, %s,%s,%s)''', (str(action_name), str(user_ip), str(content), argument, log_level))
+        VALUES (%s, %s, %s,%s,%s)''', (str(action_name), str(user_ip), str(content), str(argument), str(log_level)))
     else:
         database.insert('''INSERT INTO cantina_administration.log(name, user_ip, user_token, argument, log_level) 
-        VALUES (%s, %s, %s,%s,%s)''', (str(action_name), str(user_ip), str(user_token), argument, log_level))
+        VALUES (%s, %s, %s,%s,%s)''', (str(action_name), str(user_ip), str(user_token), str(argument), str(log_level)))
 
 
 def f_user_name(user_id, database):
@@ -41,7 +42,7 @@ def salt_password(passwordtohash, user_name, database, ctx, new_account=False):
 
 def user_login(database, ctx):
     data = database.select('''SELECT user_name, admin FROM cantina_administration.user WHERE token = %s''',
-                           (ctx.cookies.get('userID'),), 1)
+                           (ctx.cookies.get('token'),), 1)
     try:
         if data[0] != '' and data[1]:
             return True, True
