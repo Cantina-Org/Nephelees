@@ -18,7 +18,6 @@ dir_path = path.abspath(getcwd()) + '/file_cloud'
 share_path = path.abspath(getcwd()) + '/share'
 app = Flask(__name__)
 app.config['UPLOAD_PATH'] = dir_path
-api_no_token = 'You must send a token in JSON with the name: `api-token`!'
 conf_file = open(path.abspath(getcwd()) + "/config.json", 'r')
 config_data = load(conf_file)
 
@@ -44,7 +43,7 @@ def home():
     return home_cogs(request, database)
 
 
-# Fonction permettant de voire les fichiers de Cantina Cloud
+# Fonction permettant de voire les fichiers de Néphélées
 @app.route('/file/')
 def file():
     return file_cogs(request, database, share_path=share_path, dir_path=dir_path)
