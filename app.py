@@ -10,6 +10,7 @@ from Cogs.download_file import download_file_cogs
 from Cogs.file_share import file_share_cogs
 from Cogs.login import login_cogs
 from Cogs.logout import logout_cogs
+from Cogs.file_share_show import file_share_show
 from Cogs.api.test_connection import test_connection_cogs
 from Cogs.api.show_permission import show_permission_cogs
 from Cogs.api.add_user import add_user_api_cogs
@@ -41,6 +42,12 @@ except Exception as e:
 @app.route('/')
 def home():
     return home_cogs(request, database)
+
+
+# Fonction permettant de voire les fichiers de Néphélées
+@app.route('/file/share')
+def show_share_file():
+    return file_share_show(request, database)
 
 
 # Fonction permettant de voire les fichiers de Néphélées

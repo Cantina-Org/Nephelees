@@ -129,8 +129,9 @@ def file_cogs(ctx, database, dir_path, share_path):
                 return abort(403)
         elif not row[1]:
             try:
-                copy2(row[0] + '/' + actual_path + args.get('workFile'),
-                      share_path + row[2] + '/' + args.get('workFile'))
+                src = row[0] + '/' + actual_path + '/' + args.get('workFile')
+                dst = share_path + '/' + row[2] + '/' + args.get('workFile')
+                copy2(src, dst)
             except FileNotFoundError:
                 mkdir(share_path + '/' + row[2])
                 copy2(row[0] + '/' + actual_path + args.get('workFile'),

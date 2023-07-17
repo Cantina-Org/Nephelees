@@ -15,6 +15,7 @@
     <orderEntry type="library" name="aos" level="application" />
     <orderEntry type="library" name="headroom.js" level="application" />
     <orderEntry type="library" name="font-awesome" level="application" />
+    <orderEntry type="library" name="bulma" level="application" />
   </component>
   <component name="TemplatesService">
     <option name="TEMPLATE_CONFIGURATION" value="Jinja2" />
