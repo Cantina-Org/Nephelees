@@ -146,10 +146,13 @@ def file_cogs(ctx, database, dir_path, share_path):
                                                                                     salted_password, new_salt))
 
         elif args.get('loginToShow') == '1':
+            new_salt = sha256().hexdigest()
+            salted_password = salt_password(args.get('password'), new_salt, database, ctx, new_password=True)
             database.insert('''INSERT INTO cantina_administration.file_sharing(file_name, file_owner, file_short_name, 
-                login_to_show, password) VALUES (%s, %s, %s, %s, %s)''', (args.get('workFile'), row[2], rand_name,
-                                                                          args.get('loginToShow'), salt_password(
-                args.get('password'), row[2], ctx, database)))
+                            login_to_show, password, salt) VALUES (%s, %s, %s, %s, %s, %s)''',
+                            (args.get('workFile'), row[2],
+                             rand_name, args.get('loginToShow'),
+                             salted_password, new_salt))
 
         return render_template("redirect/r-myfile-clipboardcopy.html", short_name=rand_name,
                                path="/file/?path=" + actual_path)
@@ -175,11 +178,12 @@ def file_cogs(ctx, database, dir_path, share_path):
                              row[0] + '/' + actual_path + args.get('workFolder'))
             except PermissionError:
                 return 403
+        new_salt = sha256().hexdigest()
+        salted_password = salt_password(args.get('password'), new_salt, database, ctx, new_password=True)
         database.insert('''INSERT INTO cantina_administration.file_sharing(file_name, file_owner, file_short_name, 
-        login_to_show, password) VALUES (%s, %s, %s, %s, %s)''', (args.get('workFolder') + '.tar.gz', row[2], rand_name,
-                                                                  args.get('loginToShow'),
-                                                                  salt_password(args.get('password'),
-                                                                                row[2], database, ctx)))
+        login_to_show, password, salt) VALUES (%s, %s, %s, %s, %s, %s)''', (args.get('workFolder') + '.tar.gz', row[2],
+                                                                            rand_name, args.get('loginToShow'),
+                                                                            salted_password, new_salt))
         return render_template("redirect/r-myfile-clipboardcopy.html", short_name=rand_name,
                                path="/file/?path=" + actual_path)
 
