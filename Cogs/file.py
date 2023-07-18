@@ -5,6 +5,7 @@ from random import choices
 from os import walk, mkdir, system, remove
 from werkzeug.utils import secure_filename
 from Utils.utils import make_tarfile, salt_password
+from hashlib import sha256
 
 
 fd, filenames, lastPath = "", "", ""
@@ -90,7 +91,7 @@ def file_cogs(ctx, database, dir_path, share_path):
         elif not row[1]:
             system("cd " + row[0] + '/' + args.get('path') + "/ && git clone " + args.get('repoLink'))
 
-        return render_template("redirect/r-myfile.html", path="/file/%spath=" + actual_path, lastPath=lastPath)
+        return render_template("redirect/r-myfile.html", path="/file/?path=" + actual_path, lastPath=lastPath)
 
     elif args.get('action') == "pullRepo" and git_repo:
         if row[1]:
@@ -128,8 +129,9 @@ def file_cogs(ctx, database, dir_path, share_path):
                 return abort(403)
         elif not row[1]:
             try:
-                copy2(row[0] + '/' + actual_path + args.get('workFile'),
-                      share_path + row[2] + '/' + args.get('workFile'))
+                src = row[0] + '/' + actual_path + '/' + args.get('workFile')
+                dst = share_path + '/' + row[2] + '/' + args.get('workFile')
+                copy2(src, dst)
             except FileNotFoundError:
                 mkdir(share_path + '/' + row[2])
                 copy2(row[0] + '/' + actual_path + args.get('workFile'),
@@ -137,15 +139,21 @@ def file_cogs(ctx, database, dir_path, share_path):
             except PermissionError:
                 return abort(403)
         if args.get('loginToShow') == '0':
+            new_salt = sha256().hexdigest()
+            salted_password = salt_password(args.get('password'), new_salt, database, ctx, new_password=True)
             database.insert('''INSERT INTO cantina_administration.file_sharing(file_name, file_owner, file_short_name, 
-                login_to_show, password) VALUES (%s, %s, %s, %s, %s)''', (args.get('workFile'), row[2], rand_name,
-                                                                          args.get('loginToShow'), None))
+                login_to_show, password, salt) VALUES (%s, %s, %s, %s, %s, %s)''', (args.get('workFile'), row[2],
+                                                                                    rand_name, args.get('loginToShow'),
+                                                                                    salted_password, new_salt))
 
         elif args.get('loginToShow') == '1':
+            new_salt = sha256().hexdigest()
+            salted_password = salt_password(args.get('password'), new_salt, database, ctx, new_password=True)
             database.insert('''INSERT INTO cantina_administration.file_sharing(file_name, file_owner, file_short_name, 
-                login_to_show, password) VALUES (%s, %s, %s, %s, %s)''', (args.get('workFile'), row[2], rand_name,
-                                                                          args.get('loginToShow'), salt_password(
-                args.get('password'), row[2], ctx, database)))
+                            login_to_show, password, salt) VALUES (%s, %s, %s, %s, %s, %s)''',
+                            (args.get('workFile'), row[2],
+                             rand_name, args.get('loginToShow'),
+                             salted_password, new_salt))
 
         return render_template("redirect/r-myfile-clipboardcopy.html", short_name=rand_name,
                                path="/file/?path=" + actual_path)
@@ -171,10 +179,12 @@ def file_cogs(ctx, database, dir_path, share_path):
                              row[0] + '/' + actual_path + args.get('workFolder'))
             except PermissionError:
                 return 403
-        database.insert('''INSERT INTO cantina_cloud.file_sharing(file_name, file_owner, file_short_name, login_to_show, 
-            password) VALUES (%s, %s, %s, %s, %s)''', (args.get('workFolder') + '.tar.gz', row[2], rand_name,
-                                                       args.get('loginToShow'),
-                                                       salt_password(args.get('password'), row[2], ctx, database)))
+        new_salt = sha256().hexdigest()
+        salted_password = salt_password(args.get('password'), new_salt, database, ctx, new_password=True)
+        database.insert('''INSERT INTO cantina_administration.file_sharing(file_name, file_owner, file_short_name, 
+        login_to_show, password, salt) VALUES (%s, %s, %s, %s, %s, %s)''', (args.get('workFolder') + '.tar.gz', row[2],
+                                                                            rand_name, args.get('loginToShow'),
+                                                                            salted_password, new_salt))
         return render_template("redirect/r-myfile-clipboardcopy.html", short_name=rand_name,
                                path="/file/?path=" + actual_path)
 

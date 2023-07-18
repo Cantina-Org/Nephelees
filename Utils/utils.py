@@ -21,22 +21,22 @@ def f_user_name(user_id, database):
     return data[0]
 
 
-def salt_password(passwordtohash, user_name, database, ctx, new_account=False):
+def salt_password(passwordtohash, user_name, database, ctx, new_password=False):
     try:
-        if not new_account:
+        if not new_password:
             try:
                 data = database.select('''SELECT salt FROM cantina_administration.user WHERE user_name=%s''',
                                        (user_name,), 1)
-                passw = sha256(ph.verify(passwordtohash, data[0])).hexdigest().encode()
-                return passw
+                password = sha256(ph.verify(passwordtohash, data[0])).hexdigest().encode()
+                return password
             except Exception as e:
                 return 'User Not Found, ' + str(e)
         else:
-            passw = sha256(ph.hash(passwordtohash).encode()).hexdigest().encode()
-            return passw
+            password = ph.hash(passwordtohash).encode()
+            return password
 
     except AttributeError as error:
-        make_log('Error', ctx.remote_addr, ctx.cookies.get('userID'), 2, str(error))
+        make_log(database, 'Error', ctx.remote_addr, ctx.cookies.get('userID'), 2, str(error))
         return None
 
 

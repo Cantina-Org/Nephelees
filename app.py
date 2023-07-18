@@ -10,6 +10,7 @@ from Cogs.download_file import download_file_cogs
 from Cogs.file_share import file_share_cogs
 from Cogs.login import login_cogs
 from Cogs.logout import logout_cogs
+from Cogs.file_share_show import file_share_show
 from Cogs.api.test_connection import test_connection_cogs
 from Cogs.api.show_permission import show_permission_cogs
 from Cogs.api.add_user import add_user_api_cogs
@@ -18,7 +19,6 @@ dir_path = path.abspath(getcwd()) + '/file_cloud'
 share_path = path.abspath(getcwd()) + '/share'
 app = Flask(__name__)
 app.config['UPLOAD_PATH'] = dir_path
-api_no_token = 'You must send a token in JSON with the name: `api-token`!'
 conf_file = open(path.abspath(getcwd()) + "/config.json", 'r')
 config_data = load(conf_file)
 
@@ -44,7 +44,13 @@ def home():
     return home_cogs(request, database)
 
 
-# Fonction permettant de voire les fichiers de Cantina Cloud
+# Fonction permettant de voire les fichiers de Néphélées
+@app.route('/file/share')
+def show_share_file():
+    return file_share_show(request, database)
+
+
+# Fonction permettant de voire les fichiers de Néphélées
 @app.route('/file/')
 def file():
     return file_cogs(request, database, share_path=share_path, dir_path=dir_path)

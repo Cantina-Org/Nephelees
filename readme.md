@@ -2,5 +2,5 @@
 
 
 ```
-@copyright Copyright (c) 2023, matbe matbe#0111 (discord)
+@copyright Copyright (c) 2023, matyu matyu. (discord)
 ```
