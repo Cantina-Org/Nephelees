@@ -15,10 +15,8 @@ from Cogs.api.test_connection import test_connection_cogs
 from Cogs.api.show_permission import show_permission_cogs
 from Cogs.api.add_user import add_user_api_cogs
 
-dir_path = path.abspath(getcwd()) + '/file_cloud'
-share_path = path.abspath(getcwd()) + '/share'
+
 app = Flask(__name__)
-app.config['UPLOAD_PATH'] = dir_path
 conf_file = open(path.abspath(getcwd()) + "/config.json", 'r')
 config_data = load(conf_file)
 
@@ -38,6 +36,13 @@ except Exception as e:
         exit(0)
 
 
+dir_path = database.select("""SELECT content FROM cantina_administration.config WHERE name = %s""",
+                           ("dir_path",), 1)[0]
+share_path = database.select("""SELECT content FROM cantina_administration.config WHERE name = %s""",
+                             ("share_path",), 1)[0]
+app.config['UPLOAD_PATH'] = dir_path
+
+
 # Fonction définissant la racine de Cantina Cloud
 @app.route('/')
 def home():
@@ -55,7 +60,7 @@ def show_share_file():
 def file():
     return file_cogs(request, database, share_path=share_path, dir_path=dir_path)
 
-
+ 
 # Fonction permettant upload un fichier dans le dossier courant
 @app.route('/file/upload', methods=['GET', 'POST'])
 def upload_file():
