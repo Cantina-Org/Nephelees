@@ -1,6 +1,6 @@
 # Néphélées
 
-Néphélées est le SSO (Single Sign On) de la suite cantina
+Néphélées est le cloud en ligne de la suite cantina
 
 ### ⚠️: Installer Néphélées peut causer des problèmes sur votre machine si vous faites de mauvaises manipulations ! À vos risques et périls 😆 !
 
@@ -32,3 +32,18 @@ Remplisser le fichier `config.json` avec ça:
 }
 ``` 
 Compléter les champs de la catégorie `database` avec les identifiants de votre base de données.
+
+### Étapes 4:
+Lancer le fichier `app.py` via votre éditeur de code. (Vous devez exécuter le fichier depuis le dossier du projet). 
+
+### Étapes 5:
+Rendez-vous sur la page `[host:port]/` pour visualiser le service.
+
+*** 
+
+## Pour utiliser Cantina Néphélées en production :
+
+#### ⚠️: Néphélées est encore en développement et peut donc causer des problèmes irréversible sur votre machine (pouvant entrainer une réinstallation complète du système hôte!) si vous faites de mauvaises manipulations !
+
+L'installation de **Néphélées** en production peux être faite grâce à notre outils [**Ouranos**](https://github.com/Cantina-Org/Ouranos). 
+Pour cela, veuiller suivres les instructions donnée dans le fichier `README.md` de [**Ouranos**](https://github.com/Cantina-Org/Ouranos)
