@@ -11,9 +11,6 @@ from Cogs.file_share import file_share_cogs
 from Cogs.login import login_cogs
 from Cogs.logout import logout_cogs
 from Cogs.file_share_show import file_share_show
-from Cogs.api.test_connection import test_connection_cogs
-from Cogs.api.show_permission import show_permission_cogs
-from Cogs.api.add_user import add_user_api_cogs
 
 
 app = Flask(__name__)
@@ -89,25 +86,6 @@ def login():
 @app.route('/logout', methods=['POST', 'GET'])
 def logout():
     return logout_cogs(request, database)
-
-###########################################
-#                  API                    #
-###########################################
-
-
-@app.route('/api/v1/test_connection', methods=['GET'])
-def test_connection():
-    return test_connection_cogs(request, database)
-
-
-@app.route('/api/v1/show_permission', methods=['GET'])
-def show_permission():
-    return show_permission_cogs(request, database)
-
-
-@app.route('/api/v1/add_user', methods=['POST'])
-def add_user_api():
-    return add_user_api_cogs(request, database, dir_path)
 
 
 @app.errorhandler(404)
