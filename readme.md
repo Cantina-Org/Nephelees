@@ -28,7 +28,7 @@ Remplisser le fichier `config.json` avec ça:
             "database_port": ""
         }
     ],
-    "port": 3000
+    "port": 3002
 }
 ``` 
 Compléter les champs de la catégorie `database` avec les identifiants de votre base de données.
