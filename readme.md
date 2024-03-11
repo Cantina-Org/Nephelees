@@ -1,5 +1,7 @@
 # Néphélées
 
+# Néphélées va bientôt subir de une refonte totale! Pour la sécurité de vos appareils, veuillez éviter d'installer ce service ! 
+
 Néphélées est le cloud en ligne de la suite cantina
 
 ### ⚠️: Installer Néphélées peut causer des problèmes sur votre machine si vous faites de mauvaises manipulations ! À vos risques et périls 😆 !
